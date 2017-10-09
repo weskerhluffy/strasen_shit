@@ -12,9 +12,11 @@ import sys
 import logging
 from asyncio.log import logger
 from itertools import zip_longest
+from _operator import mul
+from cmath import exp, pi
 
 nivel_log = logging.ERROR
-# nivel_log = logging.DEBUG
+nivel_log = logging.DEBUG
 logger_cagada = None
 
 class enterote():
@@ -87,7 +89,7 @@ class enterote():
 #    print("ent1 redondeado {}".format(ent1))
 #    print("ent2 redondeado {}".format(ent2))
         ent1_t = enterote.fft(self.digitos)
-        logger_cagada.debug("la trans 1 {}".format(ent1_t))
+#        logger_cagada.debug("la trans 1 {}".format(ent1_t))
     # print("etn1 t {}".format(ent1_t))
         ent2_t = enterote.fft(otro.digitos)
         entr_t = list(map(mul, ent1_t, ent2_t))
@@ -126,18 +128,20 @@ class poligamio_positivo():
         self.pot_10 = 0
         if isinstance(representacion, str):
             self.init_cadena(representacion)
+        else:
+            self.init_coeficientes(representacion)
         
     def init_cadena(self, cadena):
         self.coeficientes = [int(x) for x in cadena.strip().split(" ")]
         self.max_coef = max(self.coeficientes)
         self.max_exp = len(self.coeficientes)
-        self.exp_10, self.pot_10 = poligamio_positivo.determina_pot_min_10(self.max_exp * (self.max_coef ** 2))
+        self.exp_10, self.pot_10 = poligamio_positivo.determina_pot_exp_min_10(self.max_exp * (self.max_coef ** 2))
 
     def init_coeficientes(self, coeficientes):
         self.coeficientes = coeficientes
         self.max_coef = max(self.coeficientes)
         self.max_exp = len(self.coeficientes)
-        self.exp_10, self.pot_10 = poligamio_positivo.determina_pot_min_10(self.max_exp * (self.max_coef ** 2))
+        self.exp_10, self.pot_10 = poligamio_positivo.determina_pot_exp_min_10(self.max_exp * (self.max_coef ** 2))
         
     @classmethod
     def determina_pot_exp_min_10(clazz, numero):
@@ -146,21 +150,25 @@ class poligamio_positivo():
             exp_10 += 1
         return exp_10, 10 ** exp_10
     
-    @staticmethod 
+    @classmethod 
     def numero_a_digitos(clazz, num):
         digitos = []
+        logger_cagada.debug("convirtiendo num {}".format(num))
         while num:
             digitos.append(num % 10)
             num //= 10
+        logger_cagada.debug("kedo en digitos {}".format(digitos))
         return digitos
     
-    @staticmethod
+    @classmethod
     def numero_a_digitos_padeado(clazz, num, tam):
         digitos = poligamio_positivo.numero_a_digitos(num)
-        digitos += digitos + [0] * (tam - len(digitos))
+        logger_cagada.debug("el num {} kedo en digitos {} ".format(num, digitos))
+        digitos += [0] * (tam - len(digitos))
+        logger_cagada.debug(" padeado a {} kedo {}".format(tam, digitos))
         return digitos
     
-    @staticmethod
+    @classmethod
     def enterote_de_poligamio_positivo(clazz, poligamio, exp_10):
         digitos = []
         pol = poligamio.coeficientes
@@ -169,7 +177,7 @@ class poligamio_positivo():
         logger_cagada.debug("el polinomio {} kedo como digitos {}".format(poligamio, digitos))
         return enterote(digitos)
     
-    @staticmethod
+    @classmethod
     def digitos_a_numero(clazz, digitos):
         factor = 1
         num = 0
@@ -179,7 +187,7 @@ class poligamio_positivo():
         return num
         
 # XXX: https://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks
-    @staticmethod
+    @classmethod
     def poligamio_positivo_de_enterote(clazz, ent, exp_10):
         coefs = []
         for i in range(0, len(ent.digitos), exp_10):
@@ -193,12 +201,13 @@ class poligamio_positivo():
         max_exp = max(self.max_exp, other.max_exp)
         max_coef = max(self.max_coef, other.max_coef)
         exp_10, pot_10 = poligamio_positivo.determina_pot_exp_min_10(max_exp * max_coef ** 2)
+        logger_cagada.debug("de pol {} y {} el exp 10 {}".format(self, other, exp_10))
         
         ent1 = poligamio_positivo.enterote_de_poligamio_positivo(self, exp_10)
         ent2 = poligamio_positivo.enterote_de_poligamio_positivo(other, exp_10)
         
         logger_cagada.debug("el polinom 1 {} kedo como ent {}".format(self, ent1))
-        logger_cagada.debug("el polinom 2 {} kedo como ent {}".format(self, ent2))
+        logger_cagada.debug("el polinom 2 {} kedo como ent {}".format(other, ent2))
         
         entr = ent1 * ent2
         
@@ -209,92 +218,31 @@ class poligamio_positivo():
         return pol
     
     def __add__(self, orto):
-        coefs = [x[0] + x[1] for x in zip_longest(self.digitos, orto.digitos, fillvalue=0)]
+        coefs = [x[0] + x[1] for x in zip_longest(self.coeficientes, orto.coeficientes, fillvalue=0)]
         return poligamio_positivo(coefs)
     
     def __sub__(self, orto):
-        coefs = [x[0] - x[1] for x in zip_longest(self.digitos, orto.digitos, fillvalue=0)]
+        coefs = [x[0] - x[1] for x in zip_longest(self.coeficientes, orto.coeficientes, fillvalue=0)]
         return poligamio_positivo(coefs)
         
         
     def __repr__(self):
-        return "{}".format(self.num)
+        return "{}".format(self.coeficientes)
 
     __rmul__ = __mul__
     
 
-def determina_pot_min_10(numero):
-    exp_10 = 0
-    while numero > 10 ** exp_10:
-        exp_10 += 1
-    return 10 ** exp_10
-
-def determina_pot_min_10_polinomio(polinomio):
-    max_exp = len(polinomio)
-    max_coef = max(polinomio)
-    pot_10 = determina_pot_min_10(max_exp * (max_coef ** 2))
-    return pot_10
-
-def empaca_polinomio(pol, pot_10):
-    exp_pot_10 = 0
-    num = 0
-    for coef in pol:
-        num += coef * (pot_10 ** exp_pot_10)
-        exp_pot_10 += 1
-    return numerin(num, pot_10)
-
-def desempaca_polinomio(nume):
-    num = nume.num
-    pot_10 = nume.pot_10
-    pol = []
-    while num:
-        pol.append(num % pot_10)
-        num //= pot_10
-    return pol if pol else [0] * int(log(pot_10, 10))
-
-def multiplica_polinomios(pol1, pol2):
-    pot_10 = max(determina_pot_min_10_polinomio(pol1), determina_pot_min_10_polinomio(pol2))
-    # print("pot 10 max es {}".format(pot_10))
-    pol1 = list(pol1)
-    pol2 = list(pol2)
-
-    num1 = empaca_polinomio(pol1, pot_10)
-    num2 = empaca_polinomio(pol2, pot_10)
-
-    # print("pol 1 {} num 1 {}".format(list(pol1),num1))
-    # print("pol 2 {} num 2 {}".format(list(pol2),num2))
-
-    numr = num1 * num2
-
-    polr = desempaca_polinomio(numr)
-
-    return polr
-
-
-def completa_polinomio(pol, tam):
-    return pol + [0] * (tam - len(pol))
-
-def homogeiniza_polimonios(pol1, pol2):
-    max_exp = max(len(pol1), len(pol2))
-    return completa_polinomio(pol1, max_exp), completa_polinomio(pol2, max_exp)
-
-def suma_polinomios(pol1, pol2):
-    pol1, pol2 = homogeiniza_polimonios(pol1, pol2)
-    # print("sumando {} y {}".format(list(reversed(pol1)),list(reversed(pol2))))
-    polr = list(map(lambda x, y:x + y, pol1, pol2))
-    return polr
-
-def resta_polinomios(pol1, pol2):
-    pol1, pol2 = homogeiniza_polimonios(pol1, pol2)
-    polr = list(map(lambda x, y:x - y, pol1, pol2))
-    return polr
 
 def multiplica_polinomios_signados(pol1_p, pol1_n, pol2_p, pol2_n):
-    polr_p = suma_polinomios(multiplica_polinomios(pol1_p, pol2_p), multiplica_polinomios(pol1_n, pol2_n))
-    polr_n = suma_polinomios(multiplica_polinomios(pol1_p, pol2_n), multiplica_polinomios(pol1_n, pol2_p))
+    polr_p = pol1_p * pol2_p
+    logger_cagada.debug("el pol p {} viene de {} * {}".format(polr_p, pol1_p, pol2_p))
+    polr_p += pol1_n * pol2_n
+    logger_cagada.debug("el pol p {} se le suma {} * {}".format(polr_p, pol1_n, pol2_n))
+    
+    polr_n = pol1_p * pol2_n + pol1_n * pol2_p
     # print("el pol p {} el n {}".format(list(reversed(polr_p)),list(reversed(polr_n))))
-    polr = resta_polinomios(polr_p, polr_n)
-    # print("podria ser q al fina {}".format(list(reversed(polr))))
+    polr = polr_p - polr_n
+    logger_cagada.debug("por final d cuentas el res {}".format(polr))
     return polr
 
 def separa_polinomio_por_signo(pol):
@@ -309,10 +257,14 @@ def separa_polinomio_por_signo(pol):
 
 
 def multiplica_polinomios_con_signo(pol1, pol2):
-    pol1, pol2 = homogeiniza_polimonios(pol1, pol2)
 
-    pol1_p, pol1_n = separa_polinomio_por_signo(pol1)
-    pol2_p, pol2_n = separa_polinomio_por_signo(pol2)
+    coefs1_p, coefs1_n = separa_polinomio_por_signo(pol1)
+    coefs2_p, coefs2_n = separa_polinomio_por_signo(pol2)
+    pol1_p = poligamio_positivo(coefs1_p)
+    pol1_n = poligamio_positivo(coefs1_n)
+    pol2_p = poligamio_positivo(coefs2_p)
+    pol2_n = poligamio_positivo(coefs2_n)
+    logger_cagada.debug("coefs 1 p {} pol {}".format(coefs1_p, pol1_p))
 
     polr = multiplica_polinomios_signados(pol1_p, pol1_n, pol2_p, pol2_n)
 
@@ -324,11 +276,11 @@ def unados():
     pol2 = [int(x) for x in lineas[2].strip().split(" ")]
     polr = multiplica_polinomios_con_signo(pol1, pol2)
     # print("{}".format(polr))
-    for idx, coef in enumerate(polr):
+    for idx, coef in enumerate(polr.coeficientes):
         print("{}".format(coef), end="")
         if(idx):
             print("x^{}".format(idx), end="")
-        if(idx < len(polr) - 1):
+        if(idx < len(polr.coeficientes) - 1):
             print(" + ", end="")
 
     print("")
