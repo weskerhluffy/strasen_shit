@@ -16,7 +16,7 @@ from _operator import mul
 from cmath import exp, pi
 
 nivel_log = logging.ERROR
-#nivel_log = logging.DEBUG
+# nivel_log = logging.DEBUG
 logger_cagada = None
 
 class enterote():
@@ -188,6 +188,8 @@ class poligamio_positivo():
     @classmethod
     def poligamio_positivo_de_enterote(clazz, ent, exp_10):
         coefs = []
+        if not exp_10:
+            return poligamio_positivo([0])
         for i in range(0, len(ent.digitos), exp_10):
             digitos = ent.digitos[i:i + exp_10]
             coefs.append(poligamio_positivo.digitos_a_numero(digitos))
@@ -288,9 +290,7 @@ class poligamio():
 
 def unados():
     lineas = list(sys.stdin)
-    pol1 = [int(x) for x in lineas[1].strip().split(" ")]
-    pol2 = [int(x) for x in lineas[2].strip().split(" ")]
-    polr = poligamio(pol1) * poligamio(pol2)
+    polr = poligamio(lineas[1]) * poligamio(lineas[2])
     logger_cagada.debug("el p res {}".format(polr))
     print("{}".format(polr))
 
