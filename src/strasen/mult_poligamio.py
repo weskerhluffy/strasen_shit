@@ -16,7 +16,7 @@ from _operator import mul
 from cmath import exp, pi
 
 nivel_log = logging.ERROR
-nivel_log = logging.DEBUG
+#nivel_log = logging.DEBUG
 logger_cagada = None
 
 class enterote():
@@ -132,10 +132,8 @@ class poligamio_positivo():
             self.init_coeficientes(representacion)
         
     def init_cadena(self, cadena):
-        self.coeficientes = [int(x) for x in cadena.strip().split(" ")]
-        self.max_coef = max(self.coeficientes)
-        self.max_exp = len(self.coeficientes)
-        self.exp_10, self.pot_10 = poligamio_positivo.determina_pot_exp_min_10(self.max_exp * (self.max_coef ** 2))
+        coeficientes = [int(x) for x in cadena.strip().split(" ")]
+        self.init_coeficientes(coeficientes)
 
     def init_coeficientes(self, coeficientes):
         self.coeficientes = coeficientes
@@ -232,58 +230,69 @@ class poligamio_positivo():
     __rmul__ = __mul__
     
 
-
-def multiplica_polinomios_signados(pol1_p, pol1_n, pol2_p, pol2_n):
-    polr_p = pol1_p * pol2_p
-    logger_cagada.debug("el pol p {} viene de {} * {}".format(polr_p, pol1_p, pol2_p))
-    polr_p += pol1_n * pol2_n
-    logger_cagada.debug("el pol p {} se le suma {} * {}".format(polr_p, pol1_n, pol2_n))
-    
-    polr_n = pol1_p * pol2_n + pol1_n * pol2_p
-    # print("el pol p {} el n {}".format(list(reversed(polr_p)),list(reversed(polr_n))))
-    polr = polr_p - polr_n
-    logger_cagada.debug("por final d cuentas el res {}".format(polr))
-    return polr
-
-def separa_polinomio_por_signo(pol):
-    pol_p = [0] * len(pol)
-    pol_n = [0] * len(pol)
-    for idx, coef in enumerate(pol):
-        if(coef < 0):
-            pol_n[idx] = -coef
+class poligamio():
+    def __init__(self, representacion):
+        self.coeficientes = []
+        self.polinomio_positivo = None
+        self.polinomio_negativo = None
+        if isinstance(representacion, str):
+            self.init_de_cadena(representacion)
         else:
-            pol_p[idx] = coef
-    return pol_p, pol_n
-
-
-def multiplica_polinomios_con_signo(pol1, pol2):
-
-    coefs1_p, coefs1_n = separa_polinomio_por_signo(pol1)
-    coefs2_p, coefs2_n = separa_polinomio_por_signo(pol2)
-    pol1_p = poligamio_positivo(coefs1_p)
-    pol1_n = poligamio_positivo(coefs1_n)
-    pol2_p = poligamio_positivo(coefs2_p)
-    pol2_n = poligamio_positivo(coefs2_n)
-    logger_cagada.debug("coefs 1 p {} pol {}".format(coefs1_p, pol1_p))
-
-    polr = multiplica_polinomios_signados(pol1_p, pol1_n, pol2_p, pol2_n)
-
-    return polr
+            self.init_de_coeficientes(representacion)
+    
+    def init_de_cadena(self, cadena):
+        coeficientes = [int(x) for x in cadena.strip().split(" ")]
+        self.init_de_coeficientes(coeficientes)
+        
+    def init_de_coeficientes(self, coeficientes):
+        self.coeficientes = poligamio.quita_sobrantes_coeficientes(coeficientes)
+        coeficientes_positivos = [0] * len(coeficientes)
+        coeficientes_negativos = [0] * len(coeficientes)
+        for idx, coef in enumerate(coeficientes):
+            if(coef < 0):
+                coeficientes_negativos[idx] = -coef
+            else:
+                coeficientes_positivos[idx] = coef
+        self.polinomio_positivo = poligamio_positivo(coeficientes_positivos)
+        self.polinomio_negativo = poligamio_positivo(coeficientes_negativos)
+        logger_cagada.debug("los coefs {} el pol p {} n {}".format(coeficientes, self.polinomio_positivo, self.polinomio_negativo))
+    
+    @classmethod
+    def quita_sobrantes_coeficientes(cls, coeficientes):
+        ultimo_coef = 0
+        for idx, coef in enumerate(coeficientes):
+            if coef:
+                ultimo_coef = idx
+        return coeficientes[:ultimo_coef + 1]
+        
+    
+    def __mul__(self, orto):
+        polr = self.polinomio_positivo * orto.polinomio_positivo + self.polinomio_negativo * orto.polinomio_negativo
+        logger_cagada.debug("el polr solo pos {}".format(polr))
+        polr -= (self.polinomio_positivo * orto.polinomio_negativo + self.polinomio_negativo * orto.polinomio_positivo)
+        logger_cagada.debug("el polr final {}".format(polr))
+        return poligamio(polr.coeficientes)
+    
+    __rmul__ = __mul__
+    
+    def __repr__(self):
+        cadena = ""
+        for idx, coef in enumerate(self.coeficientes):
+            cadena += "{}".format(coef)
+            if(idx):
+                cadena += "x^{}".format(idx)
+            if(idx < len(self.coeficientes) - 1):
+                cadena += " + "
+        return cadena
+#        return "{}".format(self.coeficientes)
 
 def unados():
     lineas = list(sys.stdin)
     pol1 = [int(x) for x in lineas[1].strip().split(" ")]
     pol2 = [int(x) for x in lineas[2].strip().split(" ")]
-    polr = multiplica_polinomios_con_signo(pol1, pol2)
-    # print("{}".format(polr))
-    for idx, coef in enumerate(polr.coeficientes):
-        print("{}".format(coef), end="")
-        if(idx):
-            print("x^{}".format(idx), end="")
-        if(idx < len(polr.coeficientes) - 1):
-            print(" + ", end="")
-
-    print("")
+    polr = poligamio(pol1) * poligamio(pol2)
+    logger_cagada.debug("el p res {}".format(polr))
+    print("{}".format(polr))
 
 if __name__ == "__main__":
     FORMAT = "[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
