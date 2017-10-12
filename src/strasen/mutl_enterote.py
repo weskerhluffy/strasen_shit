@@ -4,6 +4,9 @@ Created on 08/10/2017
 @author: ernesto
 '''
 # XXX: https://quickgrid.wordpress.com/2015/11/16/uva-problem-10106-product-solution-lattice-multiplication/
+# XXX: http://www.originlab.com/doc/Origin-Help/IFFT
+# XXX: http://www.itl.nist.gov/div898/software/dataplot/refman2/ch3/inve_fft.pdf
+# XXX: http://numbers.computation.free.fr/Constants/Algorithms/fft.html
 from cmath import exp, pi
 from operator import mul
 import sys
@@ -30,6 +33,7 @@ class enterote():
         self.digitos = digitos
         self.digitos_tam = len(self.digitos)
     
+# XXX: https://rosettacode.org/wiki/Fast_Fourier_transform#Python:_Recursive
     @classmethod
     def fft(clazz, x, direccion=1):    
         N = len(x)
