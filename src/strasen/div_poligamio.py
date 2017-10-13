@@ -321,11 +321,23 @@ class poligamio():
     __rtruediv__=__truediv__
 
 def laconchadelamadre():
-    lineas = list(sys.stdin)
+    logger_cagada.debug("la puta madre")
+    linea_cnt=0
+    for linea in sys.stdin:
+        if(not linea_cnt%2):
+            exp_max, kk=[int(x) for x in linea.strip().split(" ")]
+#            logger_cagada.debug("l xp mx {} l kk {}".format(exp_max,kk))
+            if exp_max==-1:
+                logger_cagada.debug("termino sta mierda")
+                break
+        else:
+            polinomio=poligamio(linea)
+            logger_cagada.debug("puta mierda {}".format(polinomio))
+        linea_cnt+=1
 #    polr = poligamio(lineas[1]) * poligamio(lineas[2])
-    polq,polr = poligamio(lineas[1]) / poligamio(lineas[2])
-    logger_cagada.debug("el p res {},{}".format(polq,polr))
-    print("{}".format(polr))
+#	    polq,polr = poligamio(lineas[1]) / poligamio(lineas[2])
+#	    logger_cagada.debug("el p res {},{}".format(polq,polr))
+#	    print("{}".format(polr))
 
 if __name__ == "__main__":
     FORMAT = "[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
