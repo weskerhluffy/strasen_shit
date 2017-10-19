@@ -14,9 +14,10 @@ from asyncio.log import logger
 from itertools import zip_longest
 from _operator import mul
 from cmath import exp, pi
+from ctypes import c_int
 
 nivel_log = logging.ERROR
-nivel_log = logging.DEBUG
+#nivel_log = logging.DEBUG
 logger_cagada = None
 
 class enterote():
@@ -136,7 +137,7 @@ class poligamio_positivo():
         self.init_coeficientes(coeficientes)
 
     def init_coeficientes(self, coeficientes):
-        self.coeficientes = coeficientes
+        self.coeficientes = coeficientes if coeficientes else [0]
         self.max_coef = max(self.coeficientes)
         self.max_exp = len(self.coeficientes)
         self.exp_10, self.pot_10 = poligamio_positivo.determina_pot_exp_min_10(self.max_exp * (self.max_coef ** 2))
@@ -242,6 +243,7 @@ class poligamio():
             self.init_de_cadena(representacion)
         else:
             self.init_de_coeficientes(representacion)
+        self.formato_mamalon=False
     
     def init_de_cadena(self, cadena):
         coeficientes = [int(x) for x in cadena.strip().split(" ")]
@@ -250,6 +252,8 @@ class poligamio():
     def init_de_coeficientes(self, coeficientes):
         self.coeficientes = coeficientes
         poligamio.quita_sobrantes_coeficientes(self.coeficientes)
+        if not self.coeficientes:
+            self.coeficientes=[0]
         coeficientes_positivos = [0] * len(coeficientes)
         coeficientes_negativos = [0] * len(coeficientes)
         for idx, coef in enumerate(coeficientes):
@@ -259,7 +263,7 @@ class poligamio():
                 coeficientes_positivos[idx] = coef
         self.polinomio_positivo = poligamio_positivo(coeficientes_positivos)
         self.polinomio_negativo = poligamio_positivo(coeficientes_negativos)
-        logger_cagada.debug("los coefs {} el pol p {} n {}".format(self.coeficientes, self.polinomio_positivo, self.polinomio_negativo))
+#        logger_cagada.debug("los coefs {} el pol p {} n {}".format(self.coeficientes, self.polinomio_positivo, self.polinomio_negativo))
     
     @classmethod
     def quita_sobrantes_coeficientes(cls, coeficientes):
@@ -283,11 +287,15 @@ class poligamio():
     def __repr__(self):
         cadena = ""
         for idx, coef in enumerate(self.coeficientes):
-            cadena += "{}".format(coef)
+            cadena += "{}".format(c_int(coef).value)
             if(idx):
-                cadena += "x^{}".format(idx)
+                if self.formato_mamalon:
+                    cadena += "x^{}".format(idx)
             if(idx < len(self.coeficientes) - 1):
-                cadena += " + "
+                if self.formato_mamalon:
+                    cadena += " + "
+                else:
+                    cadena += " "
         return cadena
 #        return "{}".format(self.coeficientes)
 
@@ -295,26 +303,37 @@ class poligamio():
     def __truediv__(self,orto):
         N=self.coeficientes
         D=orto.coeficientes
+        logger_cagada.debug("dividendo {} divisor {}".format(self,orto,))
     
 #    enterote.normalizar_a_tam(N,max_exp)
 #    enterote.normalizar_a_tam(D,max_exp)
         poligamio.quita_sobrantes_coeficientes(D)
-        dD = len(D)-1
         dN = len(N)-1
+        dD = len(D)-1
+        logger_cagada.debug("dN {} dD {}".format(dN,dD))
         if dD < 0: raise ZeroDivisionError
         if dN >= dD:
-            q = [0] * dN
+            q = [0] * (dN+1)
             while dN >= dD:
+                dividendo_ant=N[:]
                 d = [0]*(dN - dD) + D
                 mult = q[dN - dD] = N[-1] // d[-1]
+                logger_cagada.debug("l mult es {}" .format(mult))
                 d = [coeff*mult for coeff in d]
                 N = [ coeffN - coeffd  for coeffN, coeffd in zip(N, d)]
                 poligamio.quita_sobrantes_coeficientes(N)
+                logger_cagada.debug("aora N es {}".format(N))
+                if(N==dividendo_ant):
+                    break
                 dN = len(N)-1
             r = N
         else:
             q = [0]
             r = N
+            logger_cagada.debug("nada q acer r es {}".format(r))
+        poligamio.quita_sobrantes_coeficientes(q)
+#        if(not q):
+#            q=[0]
         logger_cagada.debug("el q s {} l d {}".format(q,r))
         return poligamio(q),poligamio(r)
     
@@ -331,13 +350,24 @@ def laconchadelamadre():
                 logger_cagada.debug("termino sta mierda")
                 break
         else:
-            polinomio=poligamio(linea)
-            logger_cagada.debug("puta mierda {}".format(polinomio))
+            if not kk:
+                print("0")
+            else:
+                polinomio_dividendo=poligamio(linea)
+                logger_cagada.debug("puta mierda {}".format(polinomio_dividendo))
+                coefs_divis=[0]*(kk+1)
+                coefs_divis[0]=1
+                coefs_divis[-1]+=1
+                polinomio_divisdivis=poligamio(coefs_divis)
+                logger_cagada.debug("el divis divis {}".format(polinomio_divisdivis))
+                polq,polr=polinomio_dividendo/polinomio_divisdivis
+                logger_cagada.debug("caca {}".format(polr))
+                print("{}".format(polr))
         linea_cnt+=1
 #    polr = poligamio(lineas[1]) * poligamio(lineas[2])
-#	    polq,polr = poligamio(lineas[1]) / poligamio(lineas[2])
-#	    logger_cagada.debug("el p res {},{}".format(polq,polr))
-#	    print("{}".format(polr))
+#            polq,polr = poligamio(lineas[1]) / poligamio(lineas[2])
+#            logger_cagada.debug("el p res {},{}".format(polq,polr))
+#            print("{}".format(polr))
 
 if __name__ == "__main__":
     FORMAT = "[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
