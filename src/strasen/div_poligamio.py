@@ -1,3 +1,4 @@
+#!/programas/python3.5/bin/python3
 '''
 Created on 08/10/2017
 
@@ -15,6 +16,7 @@ from itertools import zip_longest
 from _operator import mul
 from cmath import exp, pi
 from ctypes import c_int
+import re
 
 nivel_log = logging.ERROR
 #nivel_log = logging.DEBUG
@@ -300,6 +302,7 @@ class poligamio():
 #        return "{}".format(self.coeficientes)
 
 
+#    @profile
     def __truediv__(self,orto):
         N=self.coeficientes
         D=orto.coeficientes
@@ -339,10 +342,43 @@ class poligamio():
     
     __rtruediv__=__truediv__
 
+    def __floordiv__(self,orto):
+        dividendo=self.coeficientes
+        divisor=orto.coeficientes
+        poligamio.quita_sobrantes_coeficientes(divisor)
+        grado_dividendo=len(dividendo)-1
+        grado_divisor=len(divisor)-1
+        r=[0]*(grado_divisor)
+        if grado_divisor < 0: raise ZeroDivisionError
+        if grado_dividendo >= grado_divisor:
+            grado_act=0
+            while grado_act<=grado_dividendo:
+                grado_contraparte=grado_act+grado_divisor
+                r[grado_act%grado_divisor]+=dividendo[grado_act]
+                logger_cagada.debug("sumando a grado {} {} de {}".format(grado_act%grado_divisor, dividendo[grado_act],grado_act))
+
+                if(grado_contraparte<=grado_dividendo):
+                    r[grado_act%grado_divisor]-=dividendo[grado_contraparte]
+                    logger_cagada.debug("restando a grado {} {} de {}".format(grado_act%grado_divisor, dividendo[grado_contraparte],grado_contraparte))
+
+                grado_act+=1
+                if(not (grado_act%grado_divisor)):
+                    logger_cagada.debug("brincando de grado {} a {}".format(grado_act, grado_divisor+grado_act))
+                    grado_act+=grado_divisor
+        else:
+            q=[0]
+            r=dividendo
+        return poligamio(r)
+
+    __rfloordiv__=__floordiv__
+
+#@profile
 def laconchadelamadre():
-    logger_cagada.debug("la puta madre")
     linea_cnt=0
     for linea in sys.stdin:
+        if(not linea.strip()):
+            continue
+        linea=re.sub("\s\s+", " ", linea    )
         if(not linea_cnt%2):
             exp_max, kk=[int(x) for x in linea.strip().split(" ")]
 #            logger_cagada.debug("l xp mx {} l kk {}".format(exp_max,kk))
@@ -360,13 +396,11 @@ def laconchadelamadre():
                 coefs_divis[-1]+=1
                 polinomio_divisdivis=poligamio(coefs_divis)
                 logger_cagada.debug("el divis divis {}".format(polinomio_divisdivis))
-                polq,polr=polinomio_dividendo/polinomio_divisdivis
-                logger_cagada.debug("caca {}".format(polr))
+                polr=polinomio_dividendo//polinomio_divisdivis
                 print("{}".format(polr))
         linea_cnt+=1
 #    polr = poligamio(lineas[1]) * poligamio(lineas[2])
 #            polq,polr = poligamio(lineas[1]) / poligamio(lineas[2])
-#            logger_cagada.debug("el p res {},{}".format(polq,polr))
 #            print("{}".format(polr))
 
 if __name__ == "__main__":
