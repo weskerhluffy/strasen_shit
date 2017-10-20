@@ -5,8 +5,12 @@ Created on 08/10/2017
 @author: ernesto
 '''
 
-# XXX: https://www.codechef.com/problems/MULTIPLY
-# XXX: http://web.maths.unsw.edu.au/~davidharvey/talks/kronecker-talk.pdf
+# XXX: https://rosettacode.org/wiki/Polynomial_long_division#Python
+# XXX: http://tutorial.math.lamar.edu/Problems/Alg/DividingPolynomials.aspx
+# XXX: http://www.mathhelp.com/index.php?utm_campaign=purplemath&utm_source=remaindr.htm&utm_medium=banner
+# XXX: https://yuting-zhang.github.io/uva/2016/12/29/UVa-10586.html
+# XXX: https://www.hackerrank.com/contests/101hack45/challenges/polynomial-division/problem
+# XXX: https://www.codechef.com/problems/QPOLYSUM
 
 from math import log
 import sys
