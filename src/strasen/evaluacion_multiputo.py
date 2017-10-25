@@ -16,7 +16,7 @@ from ctypes import c_int
 import re
 
 nivel_log = logging.ERROR
-nivel_log = logging.DEBUG
+#nivel_log = logging.DEBUG
 logger_cagada = None
 
 class enterote():
@@ -369,6 +369,15 @@ class poligamio():
 
     __rfloordiv__=__floordiv__
 
+    @property
+    def grado(self):
+        poligamio.quita_sobrantes_coeficientes(self.coeficientes)
+        grado=len(self.coeficientes)
+        if grado<0:
+            grado=1
+            self.coeficientes=[0]
+        return grado-1
+
 
 
 class nodo_arbol():
@@ -398,21 +407,49 @@ def genera_arbolin_product_recursivo(numeros):
         logger_cagada.debug("el pol {} viene de {} por {}".format(nodo_act.valor,hijo_izq.valor,hijo_der.valor))
     else:
         if(numeros[0]!=sys.maxsize):
-            nodo_act=nodo_arbol(poligamio([numeros[0],1]))
+            nodo_act=nodo_arbol(poligamio([-numeros[0],1]))
         else:
             nodo_act=nodo_arbol(poligamio([1]))
     return nodo_act
 
-def eval_multicaca_core(numeros):
-    raiz_arbolin=genera_arbolin_producto(numeros)
+def eval_multicaca_genera_putos(b,c,d,e,n):
+    return [b*c**(4*k)+d*c**(2*k)+e for k in range(n)]
+
+def eval_multicaca_traversea(nodo,residuo_ant,evaluaciones):
+    if(not nodo.valor.grado):
+        return
+    caca,mierda=residuo_ant/nodo.valor
+    logger_cagada.debug("para l nodo {} grado {} el res ant {} i el res {}:{}".format(nodo.valor,nodo.valor.grado,residuo_ant,caca,mierda))
+    if nodo.valor.grado==1:
+        evaluaciones[-nodo.valor.coeficientes[0]]=mierda
+    if nodo.hijo_izq and nodo.hijo_izq.valor.grado and mierda.grado:
+        eval_multicaca_traversea(nodo.hijo_izq,mierda,evaluaciones)
+    if nodo.hijo_der and nodo.hijo_der.valor.grado and mierda.grado:
+        eval_multicaca_traversea(nodo.hijo_der,mierda,evaluaciones)
+
+def eval_multicaca_core(numeros,putos):
+    raiz_arbolin=genera_arbolin_producto(putos)
+    p=poligamio(numeros)
+    evaluaciones={}
     logger_cagada.debug("el puto arbol\n{}".format(raiz_arbolin))
+    logger_cagada.debug("putos {}".format(putos))
+    logger_cagada.debug("el pendejo {}".format(p))
+    eval_multicaca_traversea(raiz_arbolin,p,evaluaciones)
+    logger_cagada.debug("las evaluaciones {}".format(evaluaciones))
+    return evaluaciones
+
 
 def eval_multicaca_main():
     lineas=list(sys.stdin)
+    n,b,c,d,e=[int(x) for x in lineas[0].strip().split(" ")]
     numeros=[int(x) for x in lineas[1].strip().split(" ")]
     logger_cagada.debug("los nums {}".format(numeros))
-    eval_multicaca_core(numeros)
-    
+    logger_cagada.debug("b {} c {} d {} e {}".format(b,c,d,e))
+    putos=eval_multicaca_genera_putos(b,c,d,e,n)
+    caca=eval_multicaca_core(numeros,putos)
+    for num in putos:
+        print("{}".format(caca[num]))
+
 
 if __name__ == "__main__":
     FORMAT = "[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
