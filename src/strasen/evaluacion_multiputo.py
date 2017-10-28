@@ -17,7 +17,6 @@ import re
 
 nivel_log = logging.ERROR
 #nivel_log = logging.DEBUG
-logger_cagada = None
 
 class enterote():
     def __init__(self, representacion):
@@ -37,6 +36,7 @@ class enterote():
         self.digitos_tam = len(self.digitos)
     
     @classmethod
+    @profile
     def fft(clazz, x, direccion=1):    
         N = len(x)
         if N <= 1: return x
@@ -64,7 +64,6 @@ class enterote():
         if(tam_normalizado <= self.digitos_tam):
             return
         self.digitos += [0] * (tam_normalizado - self.digitos_tam)
-        logger_cagada.debug("normalizado de {} a {}".format(self.digitos_tam, tam_normalizado))
         self.digitos_tam = tam_normalizado
     
     @classmethod
@@ -82,27 +81,23 @@ class enterote():
     def parte_real_redondeada_de_complejos(clazz, x):
         return [round(mierda) for mierda in enterote.parte_real_de_complejos(x)]
     
+    @profile
     def __mul__(self, otro):
         enterote.normalizar_para_fft(self, otro)
-        logger_cagada.debug("ent 1 normalizado a {}".format(self.digitos))
-        logger_cagada.debug("ent 2 normalizado a {}".format(otro.digitos))
 #    print("ent1 redondeado {}".format(ent1))
 #    print("ent2 redondeado {}".format(ent2))
         ent1_t = enterote.fft(self.digitos)
-#        logger_cagada.debug("la trans 1 {}".format(ent1_t))
     # print("etn1 t {}".format(ent1_t))
         ent2_t = enterote.fft(otro.digitos)
         entr_t = list(map(mul, ent1_t, ent2_t))
 #    print("etnr t {}".format(entr_t))
         entr_tmp = enterote.parte_real_redondeada_de_complejos(enterote.ifft(entr_t))
-        logger_cagada.debug("resultado bryto {}".format(entr_tmp))
         entr = entr_tmp[:]
 #    print("resultado tmp {}".format(entr_tmp))
         for idx in range(len(entr) - 1):
             coef = entr[idx]
             entr[idx] = coef % 10
             entr[idx + 1] += coef // 10
-        logger_cagada.debug("resultado ya arregladito {}".format(entr))
         return enterote(entr)
         
     def __repr__(self):
@@ -151,19 +146,15 @@ class poligamio_positivo():
     @classmethod 
     def numero_a_digitos(clazz, num):
         digitos = []
-        logger_cagada.debug("convirtiendo num {}".format(num))
         while num:
             digitos.append(num % 10)
             num //= 10
-        logger_cagada.debug("kedo en digitos {}".format(digitos))
         return digitos
     
     @classmethod
     def numero_a_digitos_padeado(clazz, num, tam):
         digitos = poligamio_positivo.numero_a_digitos(num)
-        logger_cagada.debug("el num {} kedo en digitos {} ".format(num, digitos))
         digitos += [0] * (tam - len(digitos))
-        logger_cagada.debug(" padeado a {} kedo {}".format(tam, digitos))
         return digitos
     
     @classmethod
@@ -172,7 +163,6 @@ class poligamio_positivo():
         pol = poligamio.coeficientes
         for coef in pol:
             digitos += poligamio_positivo.numero_a_digitos_padeado(coef, exp_10)
-        logger_cagada.debug("el polinomio {} kedo como digitos {}".format(poligamio, digitos))
         return enterote(digitos)
     
     @classmethod
@@ -193,27 +183,23 @@ class poligamio_positivo():
         for i in range(0, len(ent.digitos), exp_10):
             digitos = ent.digitos[i:i + exp_10]
             coefs.append(poligamio_positivo.digitos_a_numero(digitos))
-        logger_cagada.debug("el entero {} se paso a coefs {}".format(ent, coefs))
         return poligamio_positivo(coefs)
         
     
+    @profile
     def __mul__(self, other):
         max_exp = max(self.max_exp, other.max_exp)
         max_coef = max(self.max_coef, other.max_coef)
         exp_10, pot_10 = poligamio_positivo.determina_pot_exp_min_10(max_exp * max_coef ** 2)
-        logger_cagada.debug("de pol {} y {} el exp 10 {}".format(self, other, exp_10))
         
         ent1 = poligamio_positivo.enterote_de_poligamio_positivo(self, exp_10)
         ent2 = poligamio_positivo.enterote_de_poligamio_positivo(other, exp_10)
         
-        logger_cagada.debug("el polinom 1 {} kedo como ent {}".format(self, ent1))
-        logger_cagada.debug("el polinom 2 {} kedo como ent {}".format(other, ent2))
         
         entr = ent1 * ent2
         
         pol = poligamio_positivo.poligamio_positivo_de_enterote(entr, exp_10)
         
-        logger_cagada.debug("la mult de pol {} y {} resulta {}".format(self, other, pol))
         
         return pol
     
@@ -262,7 +248,6 @@ class poligamio():
                 coeficientes_positivos[idx] = coef
         self.polinomio_positivo = poligamio_positivo(coeficientes_positivos)
         self.polinomio_negativo = poligamio_positivo(coeficientes_negativos)
-#        logger_cagada.debug("los coefs {} el pol p {} n {}".format(self.coeficientes, self.polinomio_positivo, self.polinomio_negativo))
     
     @classmethod
     def quita_sobrantes_coeficientes(cls, coeficientes):
@@ -274,11 +259,10 @@ class poligamio():
         while coeficientes and coeficientes[-1] == 0:
             coeficientes.pop()   # normalize
     
+    @profile
     def __mul__(self, orto):
         polr = self.polinomio_positivo * orto.polinomio_positivo + self.polinomio_negativo * orto.polinomio_negativo
-        logger_cagada.debug("el polr solo pos {}".format(polr))
         polr -= (self.polinomio_positivo * orto.polinomio_negativo + self.polinomio_negativo * orto.polinomio_positivo)
-        logger_cagada.debug("el polr final {}".format(polr))
         return poligamio(polr.coeficientes)
     
     __rmul__ = __mul__
@@ -303,14 +287,12 @@ class poligamio():
     def __truediv__(self,orto):
         N=self.coeficientes
         D=orto.coeficientes
-        logger_cagada.debug("dividendo {} divisor {}".format(self,orto,))
     
 #    enterote.normalizar_a_tam(N,max_exp)
 #    enterote.normalizar_a_tam(D,max_exp)
         poligamio.quita_sobrantes_coeficientes(D)
         dN = len(N)-1
         dD = len(D)-1
-        logger_cagada.debug("dN {} dD {}".format(dN,dD))
         if dD < 0: raise ZeroDivisionError
         if dN >= dD:
             q = [0] * (dN+1)
@@ -318,11 +300,9 @@ class poligamio():
                 dividendo_ant=N[:]
                 d = [0]*(dN - dD) + D
                 mult = q[dN - dD] = N[-1] // d[-1]
-                logger_cagada.debug("l mult es {}" .format(mult))
                 d = [coeff*mult for coeff in d]
                 N = [ coeffN - coeffd  for coeffN, coeffd in zip(N, d)]
                 poligamio.quita_sobrantes_coeficientes(N)
-                logger_cagada.debug("aora N es {}".format(N))
                 if(N==dividendo_ant):
                     break
                 dN = len(N)-1
@@ -330,11 +310,9 @@ class poligamio():
         else:
             q = [0]
             r = N
-            logger_cagada.debug("nada q acer r es {}".format(r))
         poligamio.quita_sobrantes_coeficientes(q)
 #        if(not q):
 #            q=[0]
-        logger_cagada.debug("el q s {} l d {}".format(q,r))
         return poligamio(q),poligamio(r)
     
     __rtruediv__=__truediv__
@@ -352,15 +330,12 @@ class poligamio():
             while grado_act<=grado_dividendo:
                 grado_contraparte=grado_act+grado_divisor
                 r[grado_act%grado_divisor]+=dividendo[grado_act]
-                logger_cagada.debug("sumando a grado {} {} de {}".format(grado_act%grado_divisor, dividendo[grado_act],grado_act))
 
                 if(grado_contraparte<=grado_dividendo):
                     r[grado_act%grado_divisor]-=dividendo[grado_contraparte]
-                    logger_cagada.debug("restando a grado {} {} de {}".format(grado_act%grado_divisor, dividendo[grado_contraparte],grado_contraparte))
 
                 grado_act+=1
                 if(not (grado_act%grado_divisor)):
-                    logger_cagada.debug("brincando de grado {} a {}".format(grado_act, grado_divisor+grado_act))
                     grado_act+=grado_divisor
         else:
             q=[0]
@@ -388,7 +363,7 @@ class nodo_arbol():
     def __repr__(self):
         return "!!!valor {}\nhijo izq {}\nhijo der {}!!!".format(self.valor,self.hijo_izq,self.hijo_der)
 
-#@profile
+@profile
 def genera_arbolin_producto(numeros):
     numeros_tam=len(numeros)
     tam_normalizado = enterote.determina_pot_2_minima(numeros_tam)
@@ -396,15 +371,14 @@ def genera_arbolin_producto(numeros):
     raiz=genera_arbolin_product_recursivo(numeros_normalizados)
     return raiz
     
+@profile
 def genera_arbolin_product_recursivo(numeros):
     nodo_act=None
     numeros_tam=len(numeros)
-    logger_cagada.debug("los nums {}".format(numeros))
     if(numeros_tam>1):
         hijo_izq=genera_arbolin_product_recursivo(numeros[:numeros_tam//2])
         hijo_der=genera_arbolin_product_recursivo(numeros[numeros_tam//2:])
         nodo_act=nodo_arbol(hijo_izq.valor*hijo_der.valor,hijo_izq,hijo_der)
-        logger_cagada.debug("el pol {} viene de {} por {}".format(nodo_act.valor,hijo_izq.valor,hijo_der.valor))
     else:
         if(numeros[0]!=sys.maxsize):
             nodo_act=nodo_arbol(poligamio([-numeros[0],1]))
@@ -419,7 +393,6 @@ def eval_multicaca_traversea(nodo,residuo_ant,evaluaciones):
     if(not nodo.valor.grado):
         return
     caca,mierda=residuo_ant/nodo.valor
-    logger_cagada.debug("para l nodo {} grado {} el res ant {} i el res {}:{}".format(nodo.valor,nodo.valor.grado,residuo_ant,caca,mierda))
     if nodo.valor.grado==1:
         evaluaciones[-nodo.valor.coeficientes[0]]=mierda
     if nodo.hijo_izq and nodo.hijo_izq.valor.grado and mierda.grado:
@@ -427,15 +400,12 @@ def eval_multicaca_traversea(nodo,residuo_ant,evaluaciones):
     if nodo.hijo_der and nodo.hijo_der.valor.grado and mierda.grado:
         eval_multicaca_traversea(nodo.hijo_der,mierda,evaluaciones)
 
+@profile
 def eval_multicaca_core(numeros,putos):
     raiz_arbolin=genera_arbolin_producto(putos)
     p=poligamio(numeros)
     evaluaciones={}
-    logger_cagada.debug("el puto arbol\n{}".format(raiz_arbolin))
-    logger_cagada.debug("putos {}".format(putos))
-    logger_cagada.debug("el pendejo {}".format(p))
-    eval_multicaca_traversea(raiz_arbolin,p,evaluaciones)
-    logger_cagada.debug("las evaluaciones {}".format(evaluaciones))
+#    eval_multicaca_traversea(raiz_arbolin,p,evaluaciones)
     return evaluaciones
 
 
@@ -443,17 +413,13 @@ def eval_multicaca_main():
     lineas=list(sys.stdin)
     n,b,c,d,e=[int(x) for x in lineas[0].strip().split(" ")]
     numeros=[int(x) for x in lineas[1].strip().split(" ")]
-    logger_cagada.debug("los nums {}".format(numeros))
-    logger_cagada.debug("b {} c {} d {} e {}".format(b,c,d,e))
     putos=eval_multicaca_genera_putos(b,c,d,e,n)
     caca=eval_multicaca_core(numeros,putos)
-    for num in putos:
-        print("{}".format(caca[num]))
+#    for num in putos:
+#        print("{}".format(caca[num]))
 
 
 if __name__ == "__main__":
     FORMAT = "[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
     logging.basicConfig(level=nivel_log, format=FORMAT)
-    logger_cagada = logging.getLogger("asa")
-    logger_cagada.setLevel(nivel_log)
     eval_multicaca_main()

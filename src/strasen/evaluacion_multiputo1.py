@@ -17,13 +17,14 @@ from ctypes import c_int
 import re
 
 nivel_log = logging.ERROR
-#nivel_log = logging.DEBUG
+nivel_log = logging.DEBUG
 logger_cagada = None
 
 class enterote():
     def __init__(self, representacion):
         self.digitos = []
         self.digitos_tam = 0
+        logger_cagada.debug("creando enterote de {}".format(representacion))
         if isinstance(representacion, str):
             self.init_de_cadeana(representacion)
         else:
@@ -38,6 +39,7 @@ class enterote():
         self.digitos_tam = len(self.digitos)
     
     @classmethod
+    @profile
     def fft(clazz, x, direccion=1):    
         N = len(x)
         if N <= 1: return x
@@ -83,6 +85,7 @@ class enterote():
     def parte_real_redondeada_de_complejos(clazz, x):
         return [round(mierda) for mierda in enterote.parte_real_de_complejos(x)]
     
+    @profile
     def __mul__(self, otro):
         enterote.normalizar_para_fft(self, otro)
         logger_cagada.debug("ent 1 normalizado a {}".format(self.digitos))
@@ -93,6 +96,7 @@ class enterote():
 #        logger_cagada.debug("la trans 1 {}".format(ent1_t))
     # print("etn1 t {}".format(ent1_t))
         ent2_t = enterote.fft(otro.digitos)
+#        logger_cagada.debug("la trans 2 {}".format(ent2_t))
         entr_t = list(map(mul, ent1_t, ent2_t))
 #    print("etnr t {}".format(entr_t))
         entr_tmp = enterote.parte_real_redondeada_de_complejos(enterote.ifft(entr_t))
@@ -190,7 +194,7 @@ class poligamio_positivo():
     def poligamio_positivo_de_enterote(clazz, ent, exp_10):
         coefs = []
         if not exp_10:
-            return poligamio_positivo([0])
+            return poligamio_positivo([ent.digitos[0]])
         for i in range(0, len(ent.digitos), exp_10):
             digitos = ent.digitos[i:i + exp_10]
             coefs.append(poligamio_positivo.digitos_a_numero(digitos))
@@ -198,6 +202,7 @@ class poligamio_positivo():
         return poligamio_positivo(coefs)
         
     
+    @profile
     def __mul__(self, other):
         max_exp = max(self.max_exp, other.max_exp)
         max_coef = max(self.max_coef, other.max_coef)
@@ -211,6 +216,7 @@ class poligamio_positivo():
         logger_cagada.debug("el polinom 2 {} kedo como ent {}".format(other, ent2))
         
         entr = ent1 * ent2
+        logger_cagada.debug("el enterote res {}".format(entr))
         
         pol = poligamio_positivo.poligamio_positivo_de_enterote(entr, exp_10)
         
@@ -275,6 +281,7 @@ class poligamio():
         while coeficientes and coeficientes[-1] == 0:
             coeficientes.pop()   # normalize
     
+    @profile
     def __mul__(self, orto):
         polr = self.polinomio_positivo * orto.polinomio_positivo + self.polinomio_negativo * orto.polinomio_negativo
         logger_cagada.debug("el polr solo pos {}".format(polr))
@@ -397,6 +404,7 @@ def genera_arbolin_producto(numeros):
     raiz=genera_arbolin_product_recursivo(numeros_normalizados)
     return raiz
     
+@profile
 def genera_arbolin_product_recursivo(numeros):
     nodo_act=None
     numeros_tam=len(numeros)
@@ -404,6 +412,7 @@ def genera_arbolin_product_recursivo(numeros):
     if(numeros_tam>1):
         hijo_izq=genera_arbolin_product_recursivo(numeros[:numeros_tam//2])
         hijo_der=genera_arbolin_product_recursivo(numeros[numeros_tam//2:])
+        logger_cagada.debug("paracam")
         nodo_act=nodo_arbol(hijo_izq.valor*hijo_der.valor,hijo_izq,hijo_der)
         logger_cagada.debug("el pol {} viene de {} por {}".format(nodo_act.valor,hijo_izq.valor,hijo_der.valor))
     else:
@@ -416,6 +425,7 @@ def genera_arbolin_product_recursivo(numeros):
 def eval_multicaca_genera_putos(b,c,d,e,n):
     return [b*c**(4*k)+d*c**(2*k)+e for k in range(n)]
 
+@profile
 def eval_multicaca_traversea(nodo,residuo_ant,evaluaciones):
     if(not nodo.valor.grado):
         return
@@ -428,6 +438,7 @@ def eval_multicaca_traversea(nodo,residuo_ant,evaluaciones):
     if nodo.hijo_der and nodo.hijo_der.valor.grado and mierda.grado:
         eval_multicaca_traversea(nodo.hijo_der,mierda,evaluaciones)
 
+@profile
 def eval_multicaca_core(numeros,putos):
     raiz_arbolin=genera_arbolin_producto(putos)
     p=poligamio(numeros)
