@@ -37,40 +37,62 @@ class enterote():
     dos_pi=4*math.acos(0)
     @classmethod
     @profile
-    def ffft_int(clazz, com_in,com_in_inicio,com_out,com_out_inicio,pasito,tam, direccion):    
+    def ffft_int(clazz, com_in,com_in_inicio,com_out,com_out_inicio,pasito,tam, direccion,exps):    
 #        logger_cagada.debug("l idx in ini {} l idx out ini {} el pasito {} el tam {}".format(com_in_inicio,com_out_inicio, pasito, tam))
         if tam==1:
             com_out[com_out_inicio]=com_in[com_in_inicio]
             return
         tam_mitad=tam>>1
         pasito_doble=pasito<<1
-        enterote.ffft_int(com_in,com_in_inicio,       com_out,com_out_inicio,          pasito_doble,tam_mitad,direccion)
-        enterote.ffft_int(com_in,com_in_inicio+pasito,com_out,com_out_inicio+tam_mitad,pasito_doble,tam_mitad,direccion)
+        enterote.ffft_int(com_in,com_in_inicio,       com_out,com_out_inicio,          pasito_doble,tam_mitad,direccion,exps)
+        enterote.ffft_int(com_in,com_in_inicio+pasito,com_out,com_out_inicio+tam_mitad,pasito_doble,tam_mitad,direccion,exps)
 #        logger_cagada.debug("la salida {} el pasito {} el tam {}".format(com_out, pasito, tam))
         for i in range(tam_mitad):
-            idx_out=i+com_out_inicio
+            idx_out_par=i+com_out_inicio
+            idx_out_impar=idx_out_par+tam_mitad
 #            logger_cagada.debug("idx out {} com ini {} tam mitad {}".format(idx_out,com_out_inicio,tam_mitad))
-            com_par=com_out[idx_out]
-            com_impar=com_out[idx_out+tam_mitad]
-            exp1=exp(direccion*enterote.dos_pi*i*1j/tam)
-            exp2=exp(direccion*enterote.dos_pi*(i+tam_mitad)*1j/tam)
-#            logger_cagada.debug("el exp1 {} para meirda {}".format(exp1, i))
+            com_par=com_out[idx_out_par]
+            com_impar=com_out[idx_out_impar]
+            exp1=exps[i][tam]
+            factor_caca=exp1*com_impar
+#            exp1tmp=exp(direccion*enterote.dos_pi*i*1j/tam)
+#            assert exp1==exp1tmp, "el exp cache {} el otro {}".format(exp1,exp1tmp)
+#            logger_cagada.debug("el exp1 {} para meirda {} {} ".format(exp1, i,tam))
 #            logger_cagada.debug("el exp2 {} para meirda {}".format(exp2, i+tam_mitad))
             
-            com_out[idx_out]=com_par+exp1*com_impar
-            com_out[idx_out+tam_mitad]=com_par-exp1*com_impar
+            com_out[idx_out_par]=com_par+factor_caca
+            com_out[idx_out_impar]=com_par-factor_caca
 #            logger_cagada.debug("calculando {} + {} * {} = {} en {}".format(com_par,exp1,com_impar,com_out[idx_out],idx_out))
 #            logger_cagada.debug("calculando {} - {} * {} = {} en {}".format(com_par,exp1,com_impar,com_out[idx_out+tam_mitad],idx_out+tam_mitad))
 
     @classmethod
     def iffft(clazz, com_in,com_out):    
-        enterote.ffft_int(com_in,0,com_out,0,1,len(com_in),-1)
+        tam=len(com_in)
+        exps=[]
+        for i in range(tam):
+            mapita={}
+            exp_2_act=2
+            while(exp_2_act<=tam):
+                mapita[exp_2_act]=exp(-1*enterote.dos_pi*i*1j/exp_2_act)
+                exp_2_act<<=1
+            exps.append(mapita)
+        enterote.ffft_int(com_in,0,com_out,0,1,len(com_in),-1,exps)
         for i in range(len(com_in)):
             com_out[i]/=len(com_in)
 
     @classmethod
+    @profile
     def ffft(clazz, com_in,com_out):    
-        enterote.ffft_int(com_in,0,com_out,0,1,len(com_in),1)
+        tam=len(com_in)
+        exps=[]
+        for i in range(tam):
+            mapita={}
+            exp_2_act=2
+            while(exp_2_act<=tam):
+                mapita[exp_2_act]=exp(enterote.dos_pi*i*1j/exp_2_act)
+                exp_2_act<<=1
+            exps.append(mapita)
+        enterote.ffft_int(com_in,0,com_out,0,1,tam,1,exps)
 
 # XXX: https://rosettacode.org/wiki/Fast_Fourier_transform#Python:_Recursive
     @classmethod
@@ -119,7 +141,7 @@ class enterote():
     def parte_real_redondeada_de_complejos(clazz, x):
         return [round(mierda) for mierda in enterote.parte_real_de_complejos(x)]
     
-    @profile
+#    @profile
     def __mul__(self, otro):
         enterote.normalizar_para_fft(self, otro)
 #        logger_cagada.debug("ent 1 normalizado a {}".format(self.digitos))
