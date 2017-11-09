@@ -7,7 +7,7 @@ Created on 08/10/2017
 # XXX: https://www.codechef.com/problems/MULTIPLY
 # XXX: http://web.maths.unsw.edu.au/~davidharvey/talks/kronecker-talk.pdf
 
-from math import log
+from math import log, acos
 import sys
 import logging
 from asyncio.log import logger
@@ -36,6 +36,65 @@ class enterote():
         self.digitos = digitos
         self.digitos_tam = len(self.digitos)
     
+    dos_pi = 4 * acos(0)
+    @classmethod
+    def ffft_int(clazz, com_in, com_in_inicio, com_out, com_out_inicio, pasito, tam, direccion, exps):    
+#        logger_cagada.debug("l idx in ini {} l idx out ini {} el pasito {} el tam {}".format(com_in_inicio,com_out_inicio, pasito, tam))
+        if tam == 1:
+            com_out[com_out_inicio] = com_in[com_in_inicio]
+            return
+        tam_mitad = tam >> 1
+        pasito_doble = pasito << 1
+        enterote.ffft_int(com_in, com_in_inicio, com_out, com_out_inicio, pasito_doble, tam_mitad, direccion, exps)
+        enterote.ffft_int(com_in, com_in_inicio + pasito, com_out, com_out_inicio + tam_mitad, pasito_doble, tam_mitad, direccion, exps)
+#        logger_cagada.debug("la salida {} el pasito {} el tam {}".format(com_out, pasito, tam))
+        for i in range(tam_mitad):
+            idx_out_par = i + com_out_inicio
+            idx_out_impar = idx_out_par + tam_mitad
+#            logger_cagada.debug("idx out {} com ini {} tam mitad {}".format(idx_out,com_out_inicio,tam_mitad))
+            com_par = com_out[idx_out_par]
+            com_impar = com_out[idx_out_impar]
+            exp1 = exps[i][tam]
+            factor_caca = exp1 * com_impar
+#            exp1tmp=exp(direccion*enterote.dos_pi*i*1j/tam)
+#            assert exp1==exp1tmp, "el exp cache {} el otro {}".format(exp1,exp1tmp)
+#            logger_cagada.debug("el exp1 {} para meirda {} {} ".format(exp1, i,tam))
+#            logger_cagada.debug("el exp2 {} para meirda {}".format(exp2, i+tam_mitad))
+            
+            com_out[idx_out_par] = com_par + factor_caca
+            com_out[idx_out_impar] = com_par - factor_caca
+#            logger_cagada.debug("calculando {} + {} * {} = {} en {}".format(com_par,exp1,com_impar,com_out[idx_out],idx_out))
+#            logger_cagada.debug("calculando {} - {} * {} = {} en {}".format(com_par,exp1,com_impar,com_out[idx_out+tam_mitad],idx_out+tam_mitad))
+
+    @classmethod
+    def iffft(clazz, com_in, com_out):    
+        tam = len(com_in)
+        exps = []
+        for i in range(tam):
+            mapita = {}
+            exp_2_act = 2
+            while(exp_2_act <= tam):
+                mapita[exp_2_act] = exp(-1 * enterote.dos_pi * i * 1j / exp_2_act)
+                exp_2_act <<= 1
+            exps.append(mapita)
+        enterote.ffft_int(com_in, 0, com_out, 0, 1, len(com_in), -1, exps)
+        for i in range(len(com_in)):
+            com_out[i] /= len(com_in)
+
+    @classmethod
+    def ffft(clazz, com_in, com_out):    
+        tam = len(com_in)
+        exps = []
+        for i in range(tam):
+            mapita = {}
+            exp_2_act = 2
+            while(exp_2_act <= tam):
+                mapita[exp_2_act] = exp(enterote.dos_pi * i * 1j / exp_2_act)
+                exp_2_act <<= 1
+            exps.append(mapita)
+        enterote.ffft_int(com_in, 0, com_out, 0, 1, tam, 1, exps)
+
+# XXX: https://rosettacode.org/wiki/Fast_Fourier_transform#Python:_Recursive
     @classmethod
     def fft(clazz, x, direccion=1):    
         N = len(x)
@@ -84,25 +143,30 @@ class enterote():
     
     def __mul__(self, otro):
         enterote.normalizar_para_fft(self, otro)
-        logger_cagada.debug("ent 1 normalizado a {}".format(self.digitos))
-        logger_cagada.debug("ent 2 normalizado a {}".format(otro.digitos))
+#        logger_cagada.debug("ent 1 normalizado a {}".format(self.digitos))
+#        logger_cagada.debug("ent 2 normalizado a {}".format(otro.digitos))
+        ent1_t = [0j] * len(self.digitos)
+        ent2_t = [0j] * len(self.digitos)
 #    print("ent1 redondeado {}".format(ent1))
 #    print("ent2 redondeado {}".format(ent2))
-        ent1_t = enterote.fft(self.digitos)
+        enterote.ffft(self.digitos, ent1_t)
 #        logger_cagada.debug("la trans 1 {}".format(ent1_t))
     # print("etn1 t {}".format(ent1_t))
-        ent2_t = enterote.fft(otro.digitos)
+        enterote.ffft(otro.digitos, ent2_t)
+#        logger_cagada.debug("la trans 2 {}".format(ent2_t))
         entr_t = list(map(mul, ent1_t, ent2_t))
 #    print("etnr t {}".format(entr_t))
-        entr_tmp = enterote.parte_real_redondeada_de_complejos(enterote.ifft(entr_t))
-        logger_cagada.debug("resultado bryto {}".format(entr_tmp))
+        entr_t_r = [0j] * len(entr_t)
+        enterote.iffft(entr_t, entr_t_r)
+        entr_tmp = enterote.parte_real_redondeada_de_complejos(entr_t_r)
+#        logger_cagada.debug("resultado bryto {}".format(entr_tmp))
         entr = entr_tmp[:]
 #    print("resultado tmp {}".format(entr_tmp))
         for idx in range(len(entr) - 1):
             coef = entr[idx]
             entr[idx] = coef % 10
             entr[idx + 1] += coef // 10
-        logger_cagada.debug("resultado ya arregladito {}".format(entr))
+#        logger_cagada.debug("resultado ya arregladito {}".format(entr))
         return enterote(entr)
         
     def __repr__(self):

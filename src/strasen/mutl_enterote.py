@@ -36,7 +36,6 @@ class enterote():
     
     dos_pi=4*math.acos(0)
     @classmethod
-    @profile
     def ffft_int(clazz, com_in,com_in_inicio,com_out,com_out_inicio,pasito,tam, direccion,exps):    
 #        logger_cagada.debug("l idx in ini {} l idx out ini {} el pasito {} el tam {}".format(com_in_inicio,com_out_inicio, pasito, tam))
         if tam==1:
@@ -81,7 +80,6 @@ class enterote():
             com_out[i]/=len(com_in)
 
     @classmethod
-    @profile
     def ffft(clazz, com_in,com_out):    
         tam=len(com_in)
         exps=[]
@@ -141,7 +139,6 @@ class enterote():
     def parte_real_redondeada_de_complejos(clazz, x):
         return [round(mierda) for mierda in enterote.parte_real_de_complejos(x)]
     
-#    @profile
     def __mul__(self, otro):
         enterote.normalizar_para_fft(self, otro)
 #        logger_cagada.debug("ent 1 normalizado a {}".format(self.digitos))

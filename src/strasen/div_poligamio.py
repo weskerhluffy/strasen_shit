@@ -12,7 +12,7 @@ Created on 08/10/2017
 # XXX: https://www.hackerrank.com/contests/101hack45/challenges/polynomial-division/problem
 # XXX: https://www.codechef.com/problems/QPOLYSUM
 
-from math import log
+from math import log, acos
 import sys
 import logging
 from asyncio.log import logger
@@ -23,7 +23,7 @@ from ctypes import c_int
 import re
 
 nivel_log = logging.ERROR
-#nivel_log = logging.DEBUG
+nivel_log = logging.DEBUG
 logger_cagada = None
 
 class enterote():
@@ -43,6 +43,65 @@ class enterote():
         self.digitos = digitos
         self.digitos_tam = len(self.digitos)
     
+    dos_pi = 4 * acos(0)
+    @classmethod
+    def ffft_int(clazz, com_in, com_in_inicio, com_out, com_out_inicio, pasito, tam, direccion, exps):    
+#        logger_cagada.debug("l idx in ini {} l idx out ini {} el pasito {} el tam {}".format(com_in_inicio,com_out_inicio, pasito, tam))
+        if tam == 1:
+            com_out[com_out_inicio] = com_in[com_in_inicio]
+            return
+        tam_mitad = tam >> 1
+        pasito_doble = pasito << 1
+        enterote.ffft_int(com_in, com_in_inicio, com_out, com_out_inicio, pasito_doble, tam_mitad, direccion, exps)
+        enterote.ffft_int(com_in, com_in_inicio + pasito, com_out, com_out_inicio + tam_mitad, pasito_doble, tam_mitad, direccion, exps)
+#        logger_cagada.debug("la salida {} el pasito {} el tam {}".format(com_out, pasito, tam))
+        for i in range(tam_mitad):
+            idx_out_par = i + com_out_inicio
+            idx_out_impar = idx_out_par + tam_mitad
+#            logger_cagada.debug("idx out {} com ini {} tam mitad {}".format(idx_out,com_out_inicio,tam_mitad))
+            com_par = com_out[idx_out_par]
+            com_impar = com_out[idx_out_impar]
+            exp1 = exps[i][tam]
+            factor_caca = exp1 * com_impar
+#            exp1tmp=exp(direccion*enterote.dos_pi*i*1j/tam)
+#            assert exp1==exp1tmp, "el exp cache {} el otro {}".format(exp1,exp1tmp)
+#            logger_cagada.debug("el exp1 {} para meirda {} {} ".format(exp1, i,tam))
+#            logger_cagada.debug("el exp2 {} para meirda {}".format(exp2, i+tam_mitad))
+            
+            com_out[idx_out_par] = com_par + factor_caca
+            com_out[idx_out_impar] = com_par - factor_caca
+#            logger_cagada.debug("calculando {} + {} * {} = {} en {}".format(com_par,exp1,com_impar,com_out[idx_out],idx_out))
+#            logger_cagada.debug("calculando {} - {} * {} = {} en {}".format(com_par,exp1,com_impar,com_out[idx_out+tam_mitad],idx_out+tam_mitad))
+
+    @classmethod
+    def iffft(clazz, com_in, com_out):    
+        tam = len(com_in)
+        exps = []
+        for i in range(tam):
+            mapita = {}
+            exp_2_act = 2
+            while(exp_2_act <= tam):
+                mapita[exp_2_act] = exp(-1 * enterote.dos_pi * i * 1j / exp_2_act)
+                exp_2_act <<= 1
+            exps.append(mapita)
+        enterote.ffft_int(com_in, 0, com_out, 0, 1, len(com_in), -1, exps)
+        for i in range(len(com_in)):
+            com_out[i] /= len(com_in)
+
+    @classmethod
+    def ffft(clazz, com_in, com_out):    
+        tam = len(com_in)
+        exps = []
+        for i in range(tam):
+            mapita = {}
+            exp_2_act = 2
+            while(exp_2_act <= tam):
+                mapita[exp_2_act] = exp(enterote.dos_pi * i * 1j / exp_2_act)
+                exp_2_act <<= 1
+            exps.append(mapita)
+        enterote.ffft_int(com_in, 0, com_out, 0, 1, tam, 1, exps)
+
+# XXX: https://rosettacode.org/wiki/Fast_Fourier_transform#Python:_Recursive
     @classmethod
     def fft(clazz, x, direccion=1):    
         N = len(x)
@@ -91,25 +150,30 @@ class enterote():
     
     def __mul__(self, otro):
         enterote.normalizar_para_fft(self, otro)
-        logger_cagada.debug("ent 1 normalizado a {}".format(self.digitos))
-        logger_cagada.debug("ent 2 normalizado a {}".format(otro.digitos))
+#        logger_cagada.debug("ent 1 normalizado a {}".format(self.digitos))
+#        logger_cagada.debug("ent 2 normalizado a {}".format(otro.digitos))
+        ent1_t = [0j] * len(self.digitos)
+        ent2_t = [0j] * len(self.digitos)
 #    print("ent1 redondeado {}".format(ent1))
 #    print("ent2 redondeado {}".format(ent2))
-        ent1_t = enterote.fft(self.digitos)
+        enterote.ffft(self.digitos, ent1_t)
 #        logger_cagada.debug("la trans 1 {}".format(ent1_t))
     # print("etn1 t {}".format(ent1_t))
-        ent2_t = enterote.fft(otro.digitos)
+        enterote.ffft(otro.digitos, ent2_t)
+#        logger_cagada.debug("la trans 2 {}".format(ent2_t))
         entr_t = list(map(mul, ent1_t, ent2_t))
 #    print("etnr t {}".format(entr_t))
-        entr_tmp = enterote.parte_real_redondeada_de_complejos(enterote.ifft(entr_t))
-        logger_cagada.debug("resultado bryto {}".format(entr_tmp))
+        entr_t_r = [0j] * len(entr_t)
+        enterote.iffft(entr_t, entr_t_r)
+        entr_tmp = enterote.parte_real_redondeada_de_complejos(entr_t_r)
+#        logger_cagada.debug("resultado bryto {}".format(entr_tmp))
         entr = entr_tmp[:]
 #    print("resultado tmp {}".format(entr_tmp))
         for idx in range(len(entr) - 1):
             coef = entr[idx]
             entr[idx] = coef % 10
             entr[idx + 1] += coef // 10
-        logger_cagada.debug("resultado ya arregladito {}".format(entr))
+#        logger_cagada.debug("resultado ya arregladito {}".format(entr))
         return enterote(entr)
         
     def __repr__(self):
@@ -125,6 +189,7 @@ class enterote():
         return cadena
     
     __str__ = __repr__
+
 
 class poligamio_positivo():
     def __init__(self, representacion):
@@ -249,7 +314,7 @@ class poligamio():
             self.init_de_cadena(representacion)
         else:
             self.init_de_coeficientes(representacion)
-        self.formato_mamalon=False
+        self.formato_mamalon = False
     
     def init_de_cadena(self, cadena):
         coeficientes = [int(x) for x in cadena.strip().split(" ")]
@@ -259,7 +324,7 @@ class poligamio():
         self.coeficientes = coeficientes
         poligamio.quita_sobrantes_coeficientes(self.coeficientes)
         if not self.coeficientes:
-            self.coeficientes=[0]
+            self.coeficientes = [0]
         coeficientes_positivos = [0] * len(coeficientes)
         coeficientes_negativos = [0] * len(coeficientes)
         for idx, coef in enumerate(coeficientes):
@@ -279,7 +344,7 @@ class poligamio():
 #                ultimo_coef = idx
 #        return coeficientes[:ultimo_coef + 1]
         while coeficientes and coeficientes[-1] == 0:
-            coeficientes.pop()   # normalize
+            coeficientes.pop()  # normalize
     
     def __mul__(self, orto):
         polr = self.polinomio_positivo * orto.polinomio_positivo + self.polinomio_negativo * orto.polinomio_negativo
@@ -305,34 +370,41 @@ class poligamio():
         return cadena
 #        return "{}".format(self.coeficientes)
 
-
+    def es_divisor_sintetico(self):
+        if self.coeficientes[0] == self.coeficientes[-1] == 1 and not any(self.coeficientes[1:-1]):
+            return True
+        else:
+            return False
+        
 #    @profile
-    def __truediv__(self,orto):
-        N=self.coeficientes
-        D=orto.coeficientes
-        logger_cagada.debug("dividendo {} divisor {}".format(self,orto,))
+    def __truediv__(self, orto):
+        N = self.coeficientes
+        D = orto.coeficientes
+        logger_cagada.debug("dividendo {} divisor {}".format(self, orto,))
     
 #    enterote.normalizar_a_tam(N,max_exp)
 #    enterote.normalizar_a_tam(D,max_exp)
         poligamio.quita_sobrantes_coeficientes(D)
-        dN = len(N)-1
-        dD = len(D)-1
-        logger_cagada.debug("dN {} dD {}".format(dN,dD))
+        dN = len(N) - 1
+        dD = len(D) - 1
+        if(orto.es_divisor_sintetico()):
+            return self.div_sintetica(orto)
+        logger_cagada.debug("dN {} dD {}".format(dN, dD))
         if dD < 0: raise ZeroDivisionError
         if dN >= dD:
-            q = [0] * (dN+1)
+            q = [0] * (dN + 1)
             while dN >= dD:
-                dividendo_ant=N[:]
-                d = [0]*(dN - dD) + D
+                dividendo_ant = N[:]
+                d = [0] * (dN - dD) + D
                 mult = q[dN - dD] = N[-1] // d[-1]
                 logger_cagada.debug("l mult es {}" .format(mult))
-                d = [coeff*mult for coeff in d]
+                d = [coeff * mult for coeff in d]
                 N = [ coeffN - coeffd  for coeffN, coeffd in zip(N, d)]
                 poligamio.quita_sobrantes_coeficientes(N)
                 logger_cagada.debug("aora N es {}".format(N))
-                if(N==dividendo_ant):
+                if(N == dividendo_ant):
                     break
-                dN = len(N)-1
+                dN = len(N) - 1
             r = N
         else:
             q = [0]
@@ -341,68 +413,66 @@ class poligamio():
         poligamio.quita_sobrantes_coeficientes(q)
 #        if(not q):
 #            q=[0]
-        logger_cagada.debug("el q s {} l d {}".format(q,r))
-        return poligamio(q),poligamio(r)
+        logger_cagada.debug("el q s {} l d {}".format(q, r))
+        return poligamio(q), poligamio(r)
     
-    __rtruediv__=__truediv__
+    __rtruediv__ = __truediv__
 
-    def __floordiv__(self,orto):
-        dividendo=self.coeficientes
-        divisor=orto.coeficientes
+    def div_sintetica(self, orto):
+        dividendo = self.coeficientes
+        divisor = orto.coeficientes
         poligamio.quita_sobrantes_coeficientes(divisor)
-        grado_dividendo=len(dividendo)-1
-        grado_divisor=len(divisor)-1
-        r=[0]*(grado_divisor)
+        grado_dividendo = len(dividendo) - 1
+        grado_divisor = len(divisor) - 1
+        r = [0] * (grado_divisor)
         if grado_divisor < 0: raise ZeroDivisionError
         if grado_dividendo >= grado_divisor:
-            grado_act=0
-            while grado_act<=grado_dividendo:
-                grado_contraparte=grado_act+grado_divisor
-                r[grado_act%grado_divisor]+=dividendo[grado_act]
-                logger_cagada.debug("sumando a grado {} {} de {}".format(grado_act%grado_divisor, dividendo[grado_act],grado_act))
+            grado_act = 0
+            while grado_act <= grado_dividendo:
+                grado_contraparte = grado_act + grado_divisor
+                r[grado_act % grado_divisor] += dividendo[grado_act]
+                logger_cagada.debug("sumando a grado {} {} de {}".format(grado_act % grado_divisor, dividendo[grado_act], grado_act))
 
-                if(grado_contraparte<=grado_dividendo):
-                    r[grado_act%grado_divisor]-=dividendo[grado_contraparte]
-                    logger_cagada.debug("restando a grado {} {} de {}".format(grado_act%grado_divisor, dividendo[grado_contraparte],grado_contraparte))
+                if(grado_contraparte <= grado_dividendo):
+                    r[grado_act % grado_divisor] -= dividendo[grado_contraparte]
+                    logger_cagada.debug("restando a grado {} {} de {}".format(grado_act % grado_divisor, dividendo[grado_contraparte], grado_contraparte))
 
-                grado_act+=1
-                if(not (grado_act%grado_divisor)):
-                    logger_cagada.debug("brincando de grado {} a {}".format(grado_act, grado_divisor+grado_act))
-                    grado_act+=grado_divisor
+                grado_act += 1
+                if(not (grado_act % grado_divisor)):
+                    logger_cagada.debug("brincando de grado {} a {}".format(grado_act, grado_divisor + grado_act))
+                    grado_act += grado_divisor
         else:
-            q=[0]
-            r=dividendo
+            q = [0]
+            r = dividendo
         return poligamio(r)
 
-    __rfloordiv__=__floordiv__
-
-#@profile
+# @profile
 def laconchadelamadre():
-    linea_cnt=0
+    linea_cnt = 0
     for linea in sys.stdin:
         if(not linea.strip()):
             continue
-        linea=re.sub("\s\s+", " ", linea    )
-        if(not linea_cnt%2):
-            exp_max, kk=[int(x) for x in linea.strip().split(" ")]
+        linea = re.sub("\s\s+", " ", linea)
+        if(not linea_cnt % 2):
+            exp_max, kk = [int(x) for x in linea.strip().split(" ")]
 #            logger_cagada.debug("l xp mx {} l kk {}".format(exp_max,kk))
-            if exp_max==-1:
+            if exp_max == -1:
                 logger_cagada.debug("termino sta mierda")
                 break
         else:
             if not kk:
                 print("0")
             else:
-                polinomio_dividendo=poligamio(linea)
+                polinomio_dividendo = poligamio(linea)
                 logger_cagada.debug("puta mierda {}".format(polinomio_dividendo))
-                coefs_divis=[0]*(kk+1)
-                coefs_divis[0]=1
-                coefs_divis[-1]+=1
-                polinomio_divisdivis=poligamio(coefs_divis)
+                coefs_divis = [0] * (kk + 1)
+                coefs_divis[0] = 1
+                coefs_divis[-1] += 1
+                polinomio_divisdivis = poligamio(coefs_divis)
                 logger_cagada.debug("el divis divis {}".format(polinomio_divisdivis))
-                polr=polinomio_dividendo//polinomio_divisdivis
+                polr = polinomio_dividendo / polinomio_divisdivis
                 print("{}".format(polr))
-        linea_cnt+=1
+        linea_cnt += 1
 #    polr = poligamio(lineas[1]) * poligamio(lineas[2])
 #            polq,polr = poligamio(lineas[1]) / poligamio(lineas[2])
 #            print("{}".format(polr))

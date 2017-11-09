@@ -2,3 +2,5 @@
 src/strasen/shit
 
 *.swp
+
+*.lprof
