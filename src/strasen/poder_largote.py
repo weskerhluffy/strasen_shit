@@ -1,5 +1,11 @@
 #!/programas/python3.5/bin/python3
-
+# XXX: https://www.hackerrank.com/challenges/power-of-large-numbers/problem
+# XXX: https://stackoverflow.com/questions/2177781/how-to-calculate-modulus-of-large-numbers
+# XXX: https://www.khanacademy.org/computing/computer-science/cryptography/modarithmetic/a/fast-modular-exponentiation
+# XXX: http://www.devx.com/tips/Tip/39012
+# XXX: https://math.stackexchange.com/questions/491576/simplifying-large-exponents-in-modular-arithmetic-like-1007-in-41007-pmod
+# XXX: https://stackoverflow.com/questions/18114138/computing-eulers-totient-function
+# XXX: https://codegolf.stackexchange.com/questions/26739/super-speedy-totient-function
 
 import logging
 from math import pow
