@@ -14,6 +14,7 @@ from _operator import mul
 from cmath import exp, pi
 from ctypes import c_int
 import re
+from collections import defaultdict
 
 
 nivel_log = logging.ERROR
@@ -468,7 +469,7 @@ class poligamio():
     def grado(self):
         poligamio.quita_sobrantes_coeficientes(self.coeficientes)
         grado = len(self.coeficientes)
-        if grado < 0:
+        if grado <= 0:
             grado = 1
             self.coeficientes = [0]
         return grado - 1
@@ -521,7 +522,7 @@ def eval_multicaca_traversea(nodo, residuo_ant, evaluaciones):
     if(not nodo.valor.grado):
         return
     caca, mierda = residuo_ant / nodo.valor
-    #logger_cagada.debug("para l nodo {} grado {} el res ant {} i el res {}:{}".format(nodo.valor, nodo.valor.grado, residuo_ant, caca, mierda))
+    #logger_cagada.debug("para l nodo {} grado {} el res ant {} i el res {}:{}".format(nodo.valor, nodo.valor.grado, residuo_ant, caca, mierda.grado))
     if nodo.valor.grado == 1:
         evaluaciones[-nodo.valor.coeficientes[0]] = mierda
     if nodo.hijo_izq and nodo.hijo_izq.valor.grado and mierda.grado:
@@ -534,7 +535,7 @@ def eval_multicaca_core(numeros, putos):
     modulo=786433
     raiz_arbolin = genera_arbolin_producto(putos,modulo)
     p = poligamio(list(map(lambda x:x%modulo,numeros)),modulo)
-    evaluaciones = {}
+    evaluaciones = defaultdict(lambda:numeros[0]%modulo)
     #logger_cagada.debug("el puto arbol\n{}".format(raiz_arbolin))
     #logger_cagada.debug("putos {}".format(putos))
     #logger_cagada.debug("el pendejo {}".format(p))
@@ -546,7 +547,7 @@ def eval_multicaca_core(numeros, putos):
 def eval_multicaca_main():
     lineas = list(sys.stdin)
     numeros = [int(x) for x in lineas[1].strip().split(" ")]
-    #logger_cagada.debug("los nums {}".format(numeros))
+    ##logger_cagada.debug("los nums {}".format(numeros))
     putos = []
     for linea in lineas[3:]:
         putos.append(int(linea.strip()))
