@@ -5,6 +5,7 @@ Created on 08/10/2017
 @author: ernesto
 '''
 # XXX: https://www.codechef.com/JULY16/problems/POLYEVAL
+# XXX: https://math.stackexchange.com/questions/519845/modulo-of-a-negative-number
 
 from math import log, acos
 import sys
