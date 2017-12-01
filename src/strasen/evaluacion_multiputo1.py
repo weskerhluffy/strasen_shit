@@ -170,7 +170,7 @@ class enterote():
             coef = entr[idx]
             entr[idx] = coef % self.base
             entr[idx + 1] += coef // self.base
-#        logger_cagada.debug("resultado ya arregladito {}".format(entr))
+        logger_cagada.debug("resultado ya arregladito {}".format(entr))
         return enterote(entr,self.base)
         
     def __repr__(self):
@@ -190,13 +190,14 @@ class enterote():
 
 
 class poligamio_positivo():
-    def __init__(self, representacion):
+    def __init__(self, representacion,base):
         self.coeficientes = []
         self.max_exp = 0
         self.max_coef = 0
         self.exp_10 = 0
         self.pot_10 = 0
-        self.base=16
+#        self.base=256
+        self.base=base
         if isinstance(representacion, str):
             self.init_cadena(representacion)
         else:
@@ -247,12 +248,13 @@ class poligamio_positivo():
         return enterote(digitos,base)
     
     @classmethod
-    def digitos_a_numero(clazz, digitos, base):
+    def digitos_a_numero(clazz, digitos, base,modulo):
         factor = 1
         num = 0
+        base_mod=base%modulo
         for digito in digitos:
-            num += digito * factor
-            factor *= base
+            num += ((digito%modulo) * factor)%modulo
+            factor = (factor*base_mod)%modulo
         return num
         
 # XXX: https://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks
@@ -260,12 +262,12 @@ class poligamio_positivo():
     def poligamio_positivo_de_enterote(clazz, ent, base, exp):
         coefs = []
         if not exp:
-            return poligamio_positivo([ent.digitos[0]])
+            return poligamio_positivo([ent.digitos[0]],base)
         for i in range(0, len(ent.digitos), exp):
             digitos = ent.digitos[i:i + exp]
-            coefs.append(poligamio_positivo.digitos_a_numero(digitos, base))
+            coefs.append(poligamio_positivo.digitos_a_numero(digitos, base,base))
         logger_cagada.debug("el entero {} se paso a coefs {} de base {}".format(ent, coefs, base))
-        return poligamio_positivo(coefs)
+        return poligamio_positivo(coefs,base)
         
     
     #profile
@@ -294,12 +296,16 @@ class poligamio_positivo():
         return pol
     
     def __add__(self, orto):
-        coefs = [x[0] + x[1] for x in zip_longest(self.coeficientes, orto.coeficientes, fillvalue=0)]
-        return poligamio_positivo(coefs)
+        assert self.base==orto.base
+        modulo=self.base
+        coefs = [(x[0]%modulo + x[1]%modulo)%modulo for x in zip_longest(self.coeficientes, orto.coeficientes, fillvalue=0)]
+        return poligamio_positivo(coefs,self.base)
     
     def __sub__(self, orto):
-        coefs = [x[0] - x[1] for x in zip_longest(self.coeficientes, orto.coeficientes, fillvalue=0)]
-        return poligamio_positivo(coefs)
+        assert self.base==orto.base
+        modulo=self.base
+        coefs = [(x[0]%modulo - x[1]%modulo)%modulo for x in zip_longest(self.coeficientes, orto.coeficientes, fillvalue=0)]
+        return poligamio_positivo(coefs,self.base)
         
         
     def __repr__(self):
@@ -310,10 +316,11 @@ class poligamio_positivo():
     
 
 class poligamio():
-    def __init__(self, representacion):
+    def __init__(self, representacion, base):
         self.coeficientes = []
         self.polinomio_positivo = None
         self.polinomio_negativo = None
+        self.base=base
         if isinstance(representacion, str):
             self.init_de_cadena(representacion)
         else:
@@ -336,8 +343,8 @@ class poligamio():
                 coeficientes_negativos[idx] = -coef
             else:
                 coeficientes_positivos[idx] = coef
-        self.polinomio_positivo = poligamio_positivo(coeficientes_positivos)
-        self.polinomio_negativo = poligamio_positivo(coeficientes_negativos)
+        self.polinomio_positivo = poligamio_positivo(coeficientes_positivos,self.base)
+        self.polinomio_negativo = poligamio_positivo(coeficientes_negativos,self.base)
 #        logger_cagada.debug("los coefs {} el pol p {} n {}".format(self.coeficientes, self.polinomio_positivo, self.polinomio_negativo))
     
     @classmethod
@@ -356,7 +363,7 @@ class poligamio():
         logger_cagada.debug("el polr solo pos {}".format(polr))
         polr -= (self.polinomio_positivo * orto.polinomio_negativo + self.polinomio_negativo * orto.polinomio_positivo)
         logger_cagada.debug("el polr final {}".format(polr))
-        return poligamio(polr.coeficientes)
+        return poligamio(polr.coeficientes,self.base)
     
     __rmul__ = __mul__
     
@@ -387,6 +394,8 @@ class poligamio():
     def __truediv__(self, orto):
         N = self.coeficientes
         D = orto.coeficientes
+        assert self.base==orto.base
+        modulo=self.base
         logger_cagada.debug("dividendo {} divisor {}".format(self, orto,))
     
 #    enterote.normalizar_a_tam(N,max_exp)
@@ -404,10 +413,10 @@ class poligamio():
             while dN >= dD:
                 dividendo_ant = N[:]
                 d = [0] * (dN - dD) + D
-                mult = q[dN - dD] = N[-1] // d[-1]
+                mult = q[dN - dD] = (N[-1] // d[-1])%modulo
                 logger_cagada.debug("l mult es {}" .format(mult))
-                d = [coeff * mult for coeff in d]
-                N = [ coeffN - coeffd  for coeffN, coeffd in zip(N, d)]
+                d = [((coeff%modulo) * mult)%modulo for coeff in d]
+                N = [ (coeffN - coeffd)%modulo  for coeffN, coeffd in zip(N, d)]
                 poligamio.quita_sobrantes_coeficientes(N)
                 logger_cagada.debug("aora N es {}".format(N))
                 if(N == dividendo_ant):
@@ -422,7 +431,7 @@ class poligamio():
 #        if(not q):
 #            q=[0]
         logger_cagada.debug("el q s {} l d {}".format(q, r))
-        return poligamio(q), poligamio(r)
+        return poligamio(q,modulo), poligamio(r,modulo)
     
     __rtruediv__ = __truediv__
 
@@ -474,29 +483,29 @@ class nodo_arbol():
         return "!!!valor {}\nhijo izq {}\nhijo der {}!!!".format(self.valor, self.hijo_izq, self.hijo_der)
 
 #profile
-def genera_arbolin_producto(numeros):
+def genera_arbolin_producto(numeros,modulo):
     numeros_tam = len(numeros)
     tam_normalizado = enterote.determina_pot_2_minima(numeros_tam)
     numeros_normalizados = numeros + [sys.maxsize] * (tam_normalizado - numeros_tam)
-    raiz = genera_arbolin_product_recursivo(numeros_normalizados)
+    raiz = genera_arbolin_product_recursivo(numeros_normalizados,modulo)
     return raiz
     
 #profile
-def genera_arbolin_product_recursivo(numeros):
+def genera_arbolin_product_recursivo(numeros, modulo):
     nodo_act = None
     numeros_tam = len(numeros)
     logger_cagada.debug("los nums {}".format(numeros))
     if(numeros_tam > 1):
-        hijo_izq = genera_arbolin_product_recursivo(numeros[:numeros_tam // 2])
-        hijo_der = genera_arbolin_product_recursivo(numeros[numeros_tam // 2:])
+        hijo_izq = genera_arbolin_product_recursivo(numeros[:numeros_tam // 2],modulo)
+        hijo_der = genera_arbolin_product_recursivo(numeros[numeros_tam // 2:],modulo)
         nodo_act = nodo_arbol(hijo_izq.valor * hijo_der.valor, hijo_izq, hijo_der)
         logger_cagada.debug("el pol {} viene de {} por {}".format(nodo_act.valor, hijo_izq.valor, hijo_der.valor))
     else:
         if(numeros[0] != sys.maxsize):
-            nodo_act = nodo_arbol(poligamio([-numeros[0], 1]))
+            nodo_act = nodo_arbol(poligamio([(-numeros[0])%modulo, 1],modulo))
             logger_cagada.debug("el pol single {}".format(nodo_act.valor))
         else:
-            nodo_act = nodo_arbol(poligamio([1]))
+            nodo_act = nodo_arbol(poligamio([1],modulo))
     return nodo_act
 
 def eval_multicaca_genera_putos(b, c, d, e, n):
@@ -516,8 +525,9 @@ def eval_multicaca_traversea(nodo, residuo_ant, evaluaciones):
 
 #profile
 def eval_multicaca_core(numeros, putos):
-    raiz_arbolin = genera_arbolin_producto(putos)
-    p = poligamio(numeros)
+    modulo=786433
+    raiz_arbolin = genera_arbolin_producto(putos,modulo)
+    p = poligamio(list(map(lambda x:x%modulo,numeros)),modulo)
     evaluaciones = {}
     logger_cagada.debug("el puto arbol\n{}".format(raiz_arbolin))
     logger_cagada.debug("putos {}".format(putos))
