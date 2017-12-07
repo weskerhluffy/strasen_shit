@@ -332,6 +332,7 @@ class poligamio():
     
     def init_de_cadena(self, cadena):
         coeficientes = [int(x) for x in cadena.strip().split(" ")]
+        assert all(map(lambda x:x < self.base, coeficientes))
         self.init_de_coeficientes(coeficientes)
         
     def init_de_coeficientes(self, coeficientes):
@@ -491,14 +492,14 @@ class funcionsilla():
         self.inicializa(coeficientes, base)
     
     def inicializa(self, coeficientes, base):
-        self.polinomio = poligamio(coeficientes, base)
+        modulo = self.modulo
+        self.polinomio = poligamio(list(map(lambda x:x % modulo, coeficientes)), base)
     
     def evalua(self, putos):
         modulo = self.modulo
-        numeros = putos
+        p = self.polinomio
         raiz_arbolin = self.genera_arbolin_producto(putos)
-        p = poligamio(list(map(lambda x:x % modulo, numeros)), modulo)
-        evaluaciones = defaultdict(lambda:numeros[0] % modulo)
+        evaluaciones = defaultdict(lambda:p.coeficientes[0] % modulo)
         # logger_cagada.debug("el puto arbol\n{}".format(raiz_arbolin))
         # logger_cagada.debug("putos {}".format(putos))
         # logger_cagada.debug("el pendejo {}".format(p))
@@ -564,7 +565,7 @@ def eval_multicaca_main():
     numeros = [int(x) for x in lineas[1].strip().split(" ")]
     # #logger_cagada.debug("los nums {}".format(numeros))
     putos = []
-    funcion_caca = funcionsilla(numeros, 786433, 10)
+    funcion_caca = funcionsilla(numeros, 786433, 786433)
     for linea in lineas[3:]:
         putos.append(int(linea.strip()))
     caca = funcion_caca.evalua(putos)
