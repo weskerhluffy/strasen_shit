@@ -556,9 +556,9 @@ def eval_multicaca_genera_putos(b, c, d, e, n):
     return [b * c ** (4 * k) + d * c ** (2 * k) + e for k in range(n)]
 
 def eval_multicaca_core(numeros, putos):
-    raiz_arbolin = genera_arbolin_producto(putos)
-    p = poligamio(numeros)
-    evaluaciones = {}
+    modulo=int(1E6+3)
+    funcion_caca = funcionsilla(numeros, modulo, modulo)
+    evaluaciones = funcion_caca.evalua(putos)
 #    eval_multicaca_traversea(raiz_arbolin,p,evaluaciones)
     return evaluaciones
 
@@ -569,8 +569,8 @@ def eval_multicaca_main():
     numeros = [int(x) for x in lineas[1].strip().split(" ")]
     putos = eval_multicaca_genera_putos(b, c, d, e, n)
     caca = eval_multicaca_core(numeros, putos)
-#    for num in putos:
-#        print("{}".format(caca[num]))
+    for num in putos:
+        print("{}".format(caca[num]))
 
 
 if __name__ == "__main__":
