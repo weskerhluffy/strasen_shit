@@ -4,6 +4,7 @@ Created on 08/10/2017
 
 @author: ernesto
 '''
+# XXX: https://www.hackerrank.com/contests/infinitum15/challenges/multipoint-evaluation/problem
 
 from math import log
 import sys
