@@ -9,11 +9,12 @@ from math import log
 import sys
 import logging
 from itertools import zip_longest
-from _operator import mul
+from operator import mul
 from cmath import exp, pi, acos
 from ctypes import c_int
 import re
 from collections import defaultdict
+from functools import partial
 
 nivel_log = logging.ERROR
 nivel_log = logging.DEBUG
@@ -551,12 +552,49 @@ class funcionsilla():
                 nodo_act = nodo_arbol(poligamio([1], modulo))
         return nodo_act
 
+def mad_power(a,b,m=None):
+    res=1
+#    logger_cagada.debug("asdd {}".format([a,b,m]))
+    assert a<m
+    assert b>=0
+    pot=a
+    b_tmp=b
+    while b_tmp:
+        if b_tmp&1:
+            res=(res*pot)%m
+        pot=(pot*pot)%m
+        b_tmp>>=1
+#    logger_cagada.debug("pero q mierda {}".format(res))
+    return res
 
-def eval_multicaca_genera_putos(b, c, d, e, n):
-    return [b * c ** (4 * k) + d * c ** (2 * k) + e for k in range(n)]
+def mult_con_mod(a,b,m):
+#    logger_cagada.debug("asdd {}".format([a,b,m]))
+    res=((a%m)*(b%m))%m
+#    logger_cagada.debug("pero q mierda {}".format(res))
+    return res
 
-def eval_multicaca_core(numeros, putos):
-    modulo=int(1E6+3)
+def sumar_con_mod(a,b,m):
+#    logger_cagada.debug("asdd {}".format([a,b,m]))
+    res=((a%m)+(b%m))%m
+#    logger_cagada.debug("pero q mierda {}".format(res))
+    return res
+
+def cagar_mierda(b, c, d, e, m,k):
+#    logger_cagada.debug("ass {}".format([b, c, d, e, m,k]))
+    pote=partial(mad_power,m=m)
+    suma=partial(sumar_con_mod,m=m)
+    multi=partial(mult_con_mod,m=m)
+#    res=sumar_con_mod(sumar_con_mod(mult_con_mod(b,mad_power(c,4*k,m),m),mult_con_mod(d,mad_power(c,2*k,m),m),m),e,m)
+    res=suma(suma(multi(b,pote(c,4*k)),multi(d,pote(c,2*k))),e)
+#    logger_cagada.debug("m corto los webs {}".format(res))
+    return res
+    
+
+def eval_multicaca_genera_putos(b, c, d, e, n,modulo):
+    genera_ass=partial(cagar_mierda,b, c, d, e, modulo)
+    return [genera_ass(k) for k in range(n)]
+
+def eval_multicaca_core(numeros, putos,modulo):
     funcion_caca = funcionsilla(numeros, modulo, modulo)
     evaluaciones = funcion_caca.evalua(putos)
 #    eval_multicaca_traversea(raiz_arbolin,p,evaluaciones)
@@ -565,10 +603,12 @@ def eval_multicaca_core(numeros, putos):
 
 def eval_multicaca_main():
     lineas = list(sys.stdin)
+    modulo=int(1E6+3)
     n, b, c, d, e = [int(x) for x in lineas[0].strip().split(" ")]
     numeros = [int(x) for x in lineas[1].strip().split(" ")]
-    putos = eval_multicaca_genera_putos(b, c, d, e, n)
-    caca = eval_multicaca_core(numeros, putos)
+    putos = eval_multicaca_genera_putos(b, c, d, e, n,modulo)
+#    logger_cagada.debug("los putos nums {}".format(putos))
+    caca = eval_multicaca_core(numeros, putos,modulo)
     for num in putos:
         print("{}".format(caca[num]))
 
