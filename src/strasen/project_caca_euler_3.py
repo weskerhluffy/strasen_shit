@@ -4,9 +4,9 @@ Created on 08/10/2017
 
 @author: ernesto
 '''
-# XXX: 
+# XXX: https://www.hackerrank.com/contests/projecteuler/challenges/euler003
 
-from math import log,ceil
+from math import log,ceil,gcd
 import sys
 import logging
 from itertools import zip_longest
@@ -15,7 +15,7 @@ from cmath import exp, pi, acos
 from ctypes import c_int
 import re
 from collections import defaultdict
-from functools import partial
+from functools import partial,reduce
 
 nivel_log = logging.ERROR
 nivel_log = logging.DEBUG
@@ -398,7 +398,7 @@ class poligamio():
         D = orto.coeficientes
         assert self.base == orto.base
         modulo = self.base
-        # logger_cagada.debug("dividendo {} divisor {}".format(self, orto,))
+        logger_cagada.debug("dividendo {} divisor {}".format(self, orto,))
     
 #    enterote.normalizar_a_tam(N,max_exp)
 #    enterote.normalizar_a_tam(D,max_exp)
@@ -407,8 +407,8 @@ class poligamio():
         dD = len(D) - 1
         if(orto.es_divisor_sintetico()):
             return self.div_sintetica(orto)
-        # logger_cagada.debug("usando div normal {} entre {}".format(self,orto))
-        # logger_cagada.debug("dN {} dD {}".format(dN, dD))
+        logger_cagada.debug("usando div normal {} entre {}".format(self,orto))
+        logger_cagada.debug("dN {} dD {}".format(dN, dD))
         if dD < 0: raise ZeroDivisionError
         if dN >= dD:
             q = [0] * (dN + 1)
@@ -416,11 +416,12 @@ class poligamio():
                 dividendo_ant = N[:]
                 d = [0] * (dN - dD) + D
                 mult = q[dN - dD] = (N[-1] // d[-1]) % modulo
-                # logger_cagada.debug("l mult es {}" .format(mult))
+                logger_cagada.debug("l mult es {} mod {}" .format(mult,modulo))
                 d = [((coeff % modulo) * mult) % modulo for coeff in d]
+                logger_cagada.debug("N es {} d es {}" .format(N,d))
                 N = [ (coeffN - coeffd) % modulo  for coeffN, coeffd in zip(N, d)]
                 poligamio.quita_sobrantes_coeficientes(N)
-                # logger_cagada.debug("aora N es {}".format(N))
+                logger_cagada.debug("aora N es {}".format(N))
                 if(N == dividendo_ant):
                     break
                 dN = len(N) - 1
@@ -428,11 +429,11 @@ class poligamio():
         else:
             q = [0]
             r = N
-            # logger_cagada.debug("nada q acer r es {}".format(r))
+            logger_cagada.debug("nada q acer r es {}".format(r))
         poligamio.quita_sobrantes_coeficientes(q)
 #        if(not q):
 #            q=[0]
-        # logger_cagada.debug("el q s {} l d {}".format(q, r))
+        logger_cagada.debug("el q s {} l d {}".format(q, r))
         return poligamio(q, modulo), poligamio(r, modulo)
     
     __rtruediv__ = __truediv__
@@ -509,12 +510,12 @@ class funcionsilla():
         if(not nodo.valor.grado):
             return
         _, mierda = residuo_ant / nodo.valor
-        # logger_cagada.debug("para l nodo {} grado {} el res ant {} i el res {}:{}".format(nodo.valor, nodo.valor.grado, residuo_ant, caca, mierda.grado))
+        logger_cagada.debug("para l nodo {} grado {} el res ant {} i el res {}".format(nodo.valor, nodo.valor.grado, residuo_ant, mierda))
         if nodo.valor.grado == 1:
             evaluaciones[-nodo.valor.coeficientes[0]] = mierda
-        if nodo.hijo_izq and nodo.hijo_izq.valor.grado and mierda.grado:
+        if nodo.hijo_izq and nodo.hijo_izq.valor.grado:
             self.eval_multicaca_traversea(nodo.hijo_izq, mierda, evaluaciones)
-        if nodo.hijo_der and nodo.hijo_der.valor.grado and mierda.grado:
+        if nodo.hijo_der and nodo.hijo_der.valor.grado:
             self.eval_multicaca_traversea(nodo.hijo_der, mierda, evaluaciones)
 
 # profile
@@ -636,6 +637,12 @@ def pce_core(n):
     funcion_caca = funcionsilla(poli.coeficientes, modulo, modulo)
     evaluaciones = funcion_caca.evalua(putos)
     logger_cagada.debug("las evals {}".format(evaluaciones))
+    muti=partial(mult_con_mod,m=modulo)
+    bs=map(lambda x:x.coeficientes[0],evaluaciones.values())
+    d2=reduce(muti,bs,1)
+    logger_cagada.debug("d2 {}".format(d2))
+    t=gcd(n,d2)
+    logger_cagada.debug("t {}".format(t))
 
 
 def pce_main():
